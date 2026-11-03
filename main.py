@@ -8,30 +8,29 @@ from prompt_builder import build_marketing_prompt
 
 st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", layout="centered")
 
-# 🔒 隐藏所有右上角 Logo & GitHub 链接，仅保留 Sidebar 展开/收起按钮
+# 🔒 精准 CSS：彻底隐藏右上角 GitHub / 平台图标，强行保留左上角 Sidebar 展开与收起按钮
 st.markdown(
     """
     <style>
-    /* 1. 隐藏默认菜单、页脚以及整个 Header 顶部条 */
+    /* 1. 隐藏页脚和默认主菜单 */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     
-    /* 2. 隐藏右上角所有 Streamlit / GitHub 图标按钮 */
-    [data-testid="stHeader"] {
+    /* 2. 隐藏 Header 的背景与右上角所有元素（GitHub 链接、Deploy 按钮、三个点菜单） */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
+    header[data-testid="stHeader"] > div:nth-child(2) {
         display: none !important;
     }
     
-    /* 3. 🎯 唯一保留：侧边栏的展开/收起切换按钮，并确保悬浮在左上角随时可点 */
+    /* 3. 🛡️ 核心强力保护：确保左上角的 Sidebar 展开/收起按钮永远可见、置顶可点击 */
+    button[data-testid="stHeaderIconButton"],
     [data-testid="stSidebarCollapseButton"] {
-        display: block !important;
+        display: inline-flex !important;
         visibility: visible !important;
-        position: fixed !important;
-        top: 12px !important;
-        left: 12px !important;
+        opacity: 1 !important;
         z-index: 999999 !important;
-        background-color: rgba(255, 255, 255, 0.8) !important;
-        border-radius: 4px !important;
     }
     </style>
     """,
