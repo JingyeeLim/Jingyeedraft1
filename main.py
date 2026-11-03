@@ -13,7 +13,7 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
-st.caption("Internal tool to generate & redesign ad visuals via OpenAI Image API (gpt-image-1.5).")
+st.caption("Internal tool to generate, edit & combine ad visuals via OpenAI Image API (gpt-image-1.5).")
 
 # 侧边栏配置
 with st.sidebar:
@@ -32,8 +32,7 @@ with st.sidebar:
     st.markdown("---")
     st.info("💡 **Cost Control Active**: Chat API endpoint is locked out to conserve company API tokens.")
 
-# 选项卡：单图文生图 vs 多图/Logo 合成重构
-tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Multi-Image / Logo Composite"])
+tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Smart Image Studio (Edit & Composite)"])
 
 # ----------------- Tab 1: 文生图 -----------------
 with tab1:
@@ -65,80 +64,114 @@ with tab1:
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-# ----------------- Tab 2: 多图上传 (主图 + Logo 合成) -----------------
+# ----------------- Tab 2: 多功能图像工作站 (单图 Edit / 多图拼接融合) -----------------
 with tab2:
-    st.subheader("Composite Main Product Photo with Brand Logo")
+    st.subheader("Upload & Transform Photos")
+    st.caption("Upload 1 or multiple photo elements. The AI will seamlessly harmonize them based on your instructions.")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        main_bg_file = st.file_uploader("1. Upload Main Product Photo (PNG/JPG)", type=["png", "jpg", "jpeg"])
-    with col2:
-        logo_file = st.file_uploader("2. Upload Brand Logo (PNG Transparent)", type=["png", "jpg", "jpeg"])
-
-    logo_position = st.selectbox(
-        "Logo Overlay Position",
-        ["Top Right", "Bottom Right", "Top Left", "Bottom Left"]
+    # 允许上传最多 4 张图片
+    uploaded_files = st.file_uploader(
+        "Upload Photos (1-4 images: Product, Model, Background, or Overlay Elements)",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True
     )
-    
-    logo_size_ratio = st.slider("Logo Size Ratio", min_value=0.1, max_value=0.4, value=0.2, step=0.05)
 
-    edit_instruction = st.text_area(
-        "AI Harmonization Instruction",
-        placeholder="e.g., Seamlessly blend the brand logo onto the image with natural lighting, soft shadow, and studio polish...",
-        height=80
-    )
-    
-    submit_btn2 = st.button("🚀 Composite & Redesign Image", type="primary")
+    if uploaded_files:
+        st.write(f"📸 **Uploaded ({len(uploaded_files)} images):**")
+        cols = st.columns(min(len(uploaded_files), 4))
+        images = []
+        for idx, file in enumerate(uploaded_files):
+            img = Image.open(file).convert("RGBA")
+            images.append(img)
+            with cols[idx]:
+                st.image(img, caption=f"Img #{idx+1}", use_container_width=True)
 
-    if submit_btn2:
-        if not main_bg_file:
-            st.warning("Please upload the main product photo first.")
-        else:
-            try:
-                # 1. 打开主图并转为 RGBA 模式
-                main_img = Image.open(main_bg_file).convert("RGBA")
-                
-                # 2. 如果上传了 Logo，自动进行像素级合成
-                if logo_file:
-                    logo_img = Image.open(logo_file).convert("RGBA")
+        # 拼接模式选择
+        layout_mode = "Single Photo Edit"
+        if len(images) > 1:
+            layout_mode = st.radio(
+                "Combination / Stitching Mode",
+                [
+                    "Side-by-Side (左右拼接对决/对比)", 
+                    "Top-Bottom (上下拼接海报)", 
+                    "Overlay Sub-Image onto Main Image (小图/画中画叠加)",
+                    "2x2 Grid Collage (四格拼图)"
+                ]
+            )
+
+        edit_instruction = st.text_area(
+            "AI Editing & Harmonization Instruction",
+            placeholder="e.g., Fuse these photos into a seamless premium commercial ad. Make the background realistic and apply warm natural daylight...",
+            height=90
+        )
+
+        if st.button("🚀 Process & AI Harmonize", type="primary"):
+            if not edit_instruction.strip():
+                st.warning("Please enter an instruction describing how AI should transform or blend the photos.")
+            else:
+                try:
+                    # 1. 根据拼接模式合并图片
+                    if len(images) == 1 or layout_mode == "Single Photo Edit":
+                        composite_img = images[0]
                     
-                    # 动态计算 Logo 尺寸
-                    main_w, main_h = main_img.size
-                    target_logo_w = int(main_w * logo_size_ratio)
-                    aspect_ratio = logo_img.height / logo_img.width
-                    target_logo_h = int(target_logo_w * aspect_ratio)
-                    logo_resized = logo_img.resize((target_logo_w, target_logo_h), Image.Resampling.LANCZOS)
-                    
-                    # 计算定位坐标
-                    padding = int(main_w * 0.03)
-                    if "Top Right" in logo_position:
-                        pos = (main_w - target_logo_w - padding, padding)
-                    elif "Bottom Right" in logo_position:
-                        pos = (main_w - target_logo_w - padding, main_h - target_logo_h - padding)
-                    elif "Top Left" in logo_position:
-                        pos = (padding, padding)
-                    else:  # Bottom Left
-                        pos = (padding, main_h - target_logo_h - padding)
-                    
-                    # 粘贴 Logo（保留透明通道）
-                    main_img.paste(logo_resized, pos, logo_resized)
-                
-                # 展示预合成的原图预览
-                st.image(main_img, caption="Pre-composited Reference Image", width=350)
-                
-                # 3. 构造强化 Prompt 送入 AI 进行自然融合重构
-                prompt_text = edit_instruction if edit_instruction.strip() else "Seamlessly integrate the brand element onto the product photo with realistic studio lighting."
-                enhanced_edit_prompt = build_marketing_prompt(prompt_text, ad_style)
-                
-                with st.spinner("AI is harmonizing and generating final high-res ad visual..."):
-                    client = ImageGenClient()
-                    img_url = client.edit_ad_image(
-                        pil_image=main_img,
-                        prompt=enhanced_edit_prompt,
-                        size=img_size
-                    )
-                    st.image(img_url, caption="Final Branded Ad Visual", use_container_width=True)
-                    st.markdown(f"[📥 Download Full High-Res Image]({img_url})")
-                    
-            except Exception as e:
-                st.error(f"Processing Error: {e}")
+                    elif "Side-by-Side" in layout_mode:
+                        # 左右拼接
+                        h = min(img.height for img in images)
+                        resized = [img.resize((int(img.width * h / img.height), h)) for img in images]
+                        total_w = sum(img.width for img in resized)
+                        composite_img = Image.new("RGBA", (total_w, h))
+                        x_off = 0
+                        for img in resized:
+                            composite_img.paste(img, (x_off, 0))
+                            x_off += img.width
+                            
+                    elif "Top-Bottom" in layout_mode:
+                        # 上下拼接
+                        w = min(img.width for img in images)
+                        resized = [img.resize((w, int(img.height * w / img.width))) for img in images]
+                        total_h = sum(img.height for img in resized)
+                        composite_img = Image.new("RGBA", (w, total_h))
+                        y_off = 0
+                        for img in resized:
+                            composite_img.paste(img, (0, y_off))
+                            y_off += img.height
+
+                    elif "Overlay" in layout_mode:
+                        # 叠加模式：第一张为主图，后面的缩小叠加在右下角/角落
+                        main_img = images[0].copy()
+                        main_w, main_h = main_img.size
+                        sub_img = images[1]
+                        sub_w = int(main_w * 0.3)
+                        sub_h = int(sub_img.height * sub_w / sub_img.width)
+                        sub_resized = sub_img.resize((sub_w, sub_h), Image.Resampling.LANCZOS)
+                        main_img.paste(sub_resized, (main_w - sub_w - 20, main_h - sub_h - 20), sub_resized)
+                        composite_img = main_img
+
+                    elif "2x2 Grid" in layout_mode:
+                        # 四格拼图
+                        w, h = 500, 500
+                        composite_img = Image.new("RGBA", (w * 2, h * 2))
+                        positions = [(0,0), (w,0), (0,h), (w,h)]
+                        for i, img in enumerate(images[:4]):
+                            composite_img.paste(img.resize((w, h)), positions[i])
+
+                    # 显示预合成草稿
+                    st.image(composite_img, caption="Pre-processed Draft Layout", width=400)
+
+                    # 2. 送入 OpenAI 进行 AI 风格统一与重构
+                    enhanced_edit_prompt = build_marketing_prompt(edit_instruction, ad_style)
+                    st.write("**Optimized Instruction sent to AI:**")
+                    st.code(enhanced_edit_prompt, language="text")
+
+                    with st.spinner("AI is harmonizing photo styles, lighting, and rendering final ad visual..."):
+                        client = ImageGenClient()
+                        img_url = client.edit_ad_image(
+                            pil_image=composite_img,
+                            prompt=enhanced_edit_prompt,
+                            size=img_size
+                        )
+                        st.image(img_url, caption="Final AI Redesigned Ad Visual", use_container_width=True)
+                        st.markdown(f"[📥 Download Full High-Res Image]({img_url})")
+
+                except Exception as e:
+                    st.error(f"Processing Error: {e}")
