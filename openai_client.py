@@ -7,21 +7,23 @@ load_dotenv()
 
 class ImageGenClient:
     def __init__(self):
-        # 优先读取 Streamlit 云端 Secrets，若没有则读取本地环境变量 os.getenv
+        # 优先读取 Streamlit 云端 Secrets，若没有则读取环境变量
         api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
         
         if not api_key:
             raise ValueError("OPENAI_API_KEY is not set in Secrets or Environment Variables.")
         self.client = OpenAI(api_key=api_key)
 
-    def generate_ad_image(self, prompt: str, size: str = "1024x1024", quality: str = "standard", style: str = "vivid"):
+    def generate_ad_image(self, prompt: str, size: str = "1024x1024", quality: str = "standard"):
+        """
+        调用 DALL·E 3 生成广告图片 (已移除不兼容的 style 参数)
+        """
         try:
             response = self.client.images.generate(
                 model="dall-e-3",
                 prompt=prompt,
                 size=size,
                 quality=quality,
-                style=style,
                 n=1,
             )
             return response.data[0].url
