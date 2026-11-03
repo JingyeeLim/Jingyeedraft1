@@ -37,17 +37,23 @@ class ImageGenClient:
 
     def edit_ad_image(self, pil_image, prompt: str, size: str = "1024x1024"):
         """
-        图生图 / 多图合成后重构功能
+        图生图 / 多图合成后重构功能 (已修复 MIME 类型报错)
         """
         try:
-            # 将 PIL Image 对象转换为 BytesIO PNG 格式字节流供 OpenAI API 接收
+            # 1. 转换为 RGBA 确保格式统一
+            pil_image = pil_image.convert("RGBA")
+            
+            # 2. 保存至内存字节流
             byte_stream = io.BytesIO()
             pil_image.save(byte_stream, format="PNG")
             byte_stream.seek(0)
             
+            # 3. 重点修复：显式指定文件名与 image/png 媒体类型
+            file_tuple = ("image.png", byte_stream, "image/png")
+            
             response = self.client.images.edit(
                 model="gpt-image-1.5",
-                image=byte_stream,
+                image=file_tuple,
                 prompt=prompt,
                 size=size,
                 n=1,
