@@ -1,4 +1,5 @@
 import os
+import io
 import streamlit as st
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -34,15 +35,19 @@ class ImageGenClient:
         except Exception as e:
             raise Exception(f"OpenAI Image API Error: {str(e)}")
 
-    def edit_ad_image(self, image_file, prompt: str, size: str = "1024x1024"):
+    def edit_ad_image(self, pil_image, prompt: str, size: str = "1024x1024"):
         """
-        图生图/参考图片修改功能 (Image-to-Image Edit)
+        图生图 / 多图合成后重构功能
         """
         try:
-            # 调用图片编辑接口，传入参考图与修改 Prompt
+            # 将 PIL Image 对象转换为 BytesIO PNG 格式字节流供 OpenAI API 接收
+            byte_stream = io.BytesIO()
+            pil_image.save(byte_stream, format="PNG")
+            byte_stream.seek(0)
+            
             response = self.client.images.edit(
                 model="gpt-image-1.5",
-                image=image_file,
+                image=byte_stream,
                 prompt=prompt,
                 size=size,
                 n=1,
