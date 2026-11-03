@@ -1,13 +1,10 @@
 def build_marketing_prompt(raw_prompt: str, ad_style: str) -> str:
-    """
-    自动补全渲染词，将营销人员输入的简短文本转化为专业广告级图片描述
-    """
     style_modifiers = {
-        "Commercial Studio (商业摄影)": "hyper-realistic commercial product photography, professional studio lighting, 8k resolution, clean background, sharp focus, vibrant colors",
-        "3D Tech Render (3D 科技感)": "modern 3D render, Octane render style, minimalist, futuristic lighting, soft shadows, sleek material textures",
-        "Minimalist Banner (极简海报)": "minimalist aesthetic, elegant design, soft natural lighting, pastel tone, high-end commercial style",
-        "Cinematic Lifestyle (生活场景)": "cinematic lighting, warm atmosphere, authentic human moment, depth of field, 35mm photograph"
+        "Commercial Studio Photography": "hyper-realistic commercial dental product photography, professional studio light setup, 8k resolution, crisp clean background, ultra-sharp focus, bright natural lighting",
+        "3D Render & Aesthetic Micro-Shot": "modern 3D dental render, Octane render engine, crystal clear transparent aesthetic, minimalist studio lighting, sleek glossy material texture",
+        "Minimalist Medical & Beauty Banner": "minimalist high-end dental aesthetic, clean soft pastel gradient background, elegant studio setup, premium wellness feel",
+        "Cinematic Lifestyle & Smile Shot": "cinematic natural daylight, confident aesthetic smile, depth of field, 35mm portrait photography, authentic human connection"
     }
     
-    modifier = style_modifiers.get(ad_style, style_modifiers["Commercial Studio (商业摄影)"])
+    modifier = style_modifiers.get(ad_style, style_modifiers["Commercial Studio Photography"])
     return f"{modifier}. Subject: {raw_prompt}"
