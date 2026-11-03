@@ -14,9 +14,6 @@ class ImageGenClient:
         self.client = OpenAI(api_key=api_key)
 
     def generate_ad_image(self, prompt: str, size: str = "1024x1024"):
-        """
-        文生图功能 (Text-to-Image)
-        """
         try:
             response = self.client.images.generate(
                 model="gpt-image-1.5",
@@ -36,18 +33,13 @@ class ImageGenClient:
             raise Exception(f"OpenAI Image API Error: {str(e)}")
 
     def edit_ad_image(self, pil_image, prompt: str, size: str = "1024x1024"):
-        """
-        AI 图像重构与编辑 (支持单图修改、多图拼合后融合)
-        """
         try:
             pil_image = pil_image.convert("RGBA")
             byte_stream = io.BytesIO()
             pil_image.save(byte_stream, format="PNG")
             byte_stream.seek(0)
             
-            # 显式提供 MIME 类型避开 400 报错
             file_tuple = ("image.png", byte_stream, "image/png")
-            
             response = self.client.images.edit(
                 model="gpt-image-1.5",
                 image=file_tuple,
