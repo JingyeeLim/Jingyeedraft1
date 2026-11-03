@@ -6,37 +6,40 @@ from PIL import Image
 from openai_client import ImageGenClient
 from prompt_builder import build_marketing_prompt
 
-st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", layout="centered")
+# 设置页面，默认收起/不使用 Sidebar 菜单
+st.set_page_config(
+    page_title="Enterprise AI Ad Generator", 
+    page_icon="🎨", 
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
-# 🔒 精准 CSS：彻底隐藏右上角 GitHub / 平台图标 / 菜单，强行保留左上角 Sidebar 展开与收起按钮
+# 🔒 彻底隐藏顶部 Header (GitHub 链接、Logo)、页脚以及 Sidebar 侧栏
 st.markdown(
     """
     <style>
-    /* 1. 隐藏页脚和默认主菜单 */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* 1. 彻底隐藏 Header 顶栏（包含所有 GitHub / 部署图标）、主菜单与页脚 */
+    header {display: none !important;}
+    #MainMenu {visibility: hidden !important;}
+    footer {visibility: hidden !important;}
     
-    /* 2. 隐藏 Header 的背景与右上角所有元素（GitHub 链接、Deploy 按钮、三个点菜单） */
-    header[data-testid="stHeader"] {
-        background: transparent !important;
-    }
-    header[data-testid="stHeader"] > div:nth-child(2) {
+    /* 2. 彻底隐藏侧边栏及其切换按钮 */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarExpandButton"] {
         display: none !important;
     }
     
-    /* 3. 🛡️ 核心保护：确保左上角 Sidebar 展开/收起按钮永远可见、置顶可点击 */
-    button[data-testid="stHeaderIconButton"],
-    [data-testid="stSidebarCollapseButton"] {
-        display: inline-flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: 999999 !important;
+    /* 3. 优化主界面顶部的边距 */
+    .block-container {
+        padding-top: 2rem !important;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
+# 页面主标题
 st.markdown(
     """
     <h1 style='white-space: nowrap; font-size: 2rem; margin-bottom: 0.5rem;'>
@@ -47,21 +50,25 @@ st.markdown(
 )
 st.caption("Internal tool to generate & harmonize commercial ad visuals via OpenAI API.")
 
-with st.sidebar:
-    st.header("⚙️ Image Settings")
-    ad_style = st.selectbox(
-        "Ad Style Preset",
-        [
-            "Commercial Studio Photography",
-            "3D Render & Aesthetic Micro-Shot",
-            "Minimalist Medical & Beauty Banner",
-            "Cinematic Lifestyle & Smile Shot"
-        ]
-    )
-    img_size = st.selectbox("Resolution", ["1024x1024", "1024x1792", "1792x1024"])
-    
-    st.markdown("---")
-    st.info("💡 **Cost Control Active**: Chat API endpoint is locked out to conserve company API tokens.")
+# ---------------------------------------------------------
+# ⚙️ 全局配置区域（原本 Sidebar 里的选项，直接搬到主页面顶部）
+# ---------------------------------------------------------
+with st.expander("⚙️ Image Generation Settings (Global Presets)", expanded=True):
+    col_preset, col_res = st.columns(2)
+    with col_preset:
+        ad_style = st.selectbox(
+            "Ad Style Preset",
+            [
+                "Commercial Studio Photography",
+                "3D Render & Aesthetic Micro-Shot",
+                "Minimalist Medical & Beauty Banner",
+                "Cinematic Lifestyle & Smile Shot"
+            ]
+        )
+    with col_res:
+        img_size = st.selectbox("Resolution", ["1024x1024", "1024x1792", "1792x1024"])
+
+st.markdown("---")
 
 tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Photo Harmonization (Single Photo Upload)"])
 
