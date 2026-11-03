@@ -1,5 +1,5 @@
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageDraw
 from openai_client import ImageGenClient
 from prompt_builder import build_marketing_prompt
 
@@ -15,7 +15,6 @@ st.markdown(
 )
 st.caption("Internal tool to generate, edit & combine ad visuals via OpenAI Image API (gpt-image-1.5).")
 
-# 侧边栏配置
 with st.sidebar:
     st.header("⚙️ Image Settings")
     ad_style = st.selectbox(
@@ -32,9 +31,9 @@ with st.sidebar:
     st.markdown("---")
     st.info("💡 **Cost Control Active**: Chat API endpoint is locked out to conserve company API tokens.")
 
-tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Smart Image Studio (Edit & Composite)"])
+tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Multi-Photo AI Studio"])
 
-# ----------------- Tab 1: 文生图 -----------------
+# --- Tab 1: Text-to-Image ---
 with tab1:
     with st.form("text_gen_form"):
         raw_prompt = st.text_area(
@@ -64,113 +63,74 @@ with tab1:
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-# ----------------- Tab 2: 多功能图像工作站 (单图 Edit / 多图拼接融合) -----------------
+# --- Tab 2: Multi-Photo AI Studio ---
 with tab2:
-    st.subheader("Upload & Transform Photos")
-    st.caption("Upload 1 or multiple photo elements. The AI will seamlessly harmonize them based on your instructions.")
+    st.subheader("Upload Photos & Describe Design")
+    st.caption("Upload 1-4 reference images. Use tags like **Image 1**, **Image 2** in your instruction to guide the AI.")
     
-    # 允许上传最多 4 张图片
     uploaded_files = st.file_uploader(
-        "Upload Photos (1-4 images: Product, Model, Background, or Overlay Elements)",
+        "Upload Reference Photos (1-4 images)",
         type=["png", "jpg", "jpeg"],
         accept_multiple_files=True
     )
 
     if uploaded_files:
-        st.write(f"📸 **Uploaded ({len(uploaded_files)} images):**")
-        cols = st.columns(min(len(uploaded_files), 4))
-        images = []
-        for idx, file in enumerate(uploaded_files):
-            img = Image.open(file).convert("RGBA")
-            images.append(img)
+        raw_images = [Image.open(f).convert("RGBA") for f in uploaded_files[:4]]
+        
+        st.write("📸 **Uploaded Reference Images with IDs:**")
+        cols = st.columns(len(raw_images))
+        
+        tagged_images = []
+        for idx, img in enumerate(raw_images):
+            tag_name = f"Image {idx+1}"
             with cols[idx]:
-                st.image(img, caption=f"Img #{idx+1}", use_container_width=True)
-
-        # 拼接模式选择
-        layout_mode = "Single Photo Edit"
-        if len(images) > 1:
-            layout_mode = st.radio(
-                "Combination / Stitching Mode",
-                [
-                    "Side-by-Side", 
-                    "Top-Bottom", 
-                    "Overlay Sub-Image onto Main Image",
-                    "2x2 Grid Collage"
-                ]
-            )
+                st.image(img, caption=f"🏷️ {tag_name}", use_container_width=True)
+            
+            tagged_img = img.copy()
+            draw = ImageDraw.Draw(tagged_img)
+            draw.rectangle([(10, 10), (160, 50)], fill=(0, 0, 0, 180))
+            draw.text((20, 15), tag_name, fill=(255, 255, 255, 255))
+            tagged_images.append(tagged_img)
 
         edit_instruction = st.text_area(
-            "AI Editing & Harmonization Instruction",
-            placeholder="e.g., Fuse these photos into a seamless premium commercial ad. Make the background realistic and apply warm natural daylight...",
-            height=90
+            "Design Instruction (Use Image IDs freely)",
+            placeholder="e.g., Take the aligner from Image 1 and place it onto the bathroom table in Image 2. Add the logo from Image 3 on top right corner.",
+            height=100
         )
 
-        if st.button("🚀 Process & AI Harmonize", type="primary"):
+        if st.button("🚀 Process & Generate Visual", type="primary"):
             if not edit_instruction.strip():
-                st.warning("Please enter an instruction describing how AI should transform or blend the photos.")
+                st.warning("Please enter your design instruction using the Image IDs.")
             else:
                 try:
-                    # 1. 根据拼接模式合并图片
-                    if len(images) == 1 or layout_mode == "Single Photo Edit":
-                        composite_img = images[0]
+                    target_h = 400
+                    resized_imgs = []
+                    for img in tagged_images:
+                        w_new = int(img.width * target_h / img.height)
+                        resized_imgs.append(img.resize((w_new, target_h), Image.Resampling.LANCZOS))
                     
-                    elif "Side-by-Side" in layout_mode:
-                        # 左右拼接
-                        h = min(img.height for img in images)
-                        resized = [img.resize((int(img.width * h / img.height), h)) for img in images]
-                        total_w = sum(img.width for img in resized)
-                        composite_img = Image.new("RGBA", (total_w, h))
-                        x_off = 0
-                        for img in resized:
-                            composite_img.paste(img, (x_off, 0))
-                            x_off += img.width
-                            
-                    elif "Top-Bottom" in layout_mode:
-                        # 上下拼接
-                        w = min(img.width for img in images)
-                        resized = [img.resize((w, int(img.height * w / img.width))) for img in images]
-                        total_h = sum(img.height for img in resized)
-                        composite_img = Image.new("RGBA", (w, total_h))
-                        y_off = 0
-                        for img in resized:
-                            composite_img.paste(img, (0, y_off))
-                            y_off += img.height
+                    total_w = sum(img.width for img in resized_imgs)
+                    composite_img = Image.new("RGBA", (total_w, target_h), (255, 255, 255, 255))
+                    
+                    x_off = 0
+                    for img in resized_imgs:
+                        composite_img.paste(img, (x_off, 0), img)
+                        x_off += img.width
 
-                    elif "Overlay" in layout_mode:
-                        # 叠加模式：第一张为主图，后面的缩小叠加在右下角/角落
-                        main_img = images[0].copy()
-                        main_w, main_h = main_img.size
-                        sub_img = images[1]
-                        sub_w = int(main_w * 0.3)
-                        sub_h = int(sub_img.height * sub_w / sub_img.width)
-                        sub_resized = sub_img.resize((sub_w, sub_h), Image.Resampling.LANCZOS)
-                        main_img.paste(sub_resized, (main_w - sub_w - 20, main_h - sub_h - 20), sub_resized)
-                        composite_img = main_img
-
-                    elif "2x2 Grid" in layout_mode:
-                        # 四格拼图
-                        w, h = 500, 500
-                        composite_img = Image.new("RGBA", (w * 2, h * 2))
-                        positions = [(0,0), (w,0), (0,h), (w,h)]
-                        for i, img in enumerate(images[:4]):
-                            composite_img.paste(img.resize((w, h)), positions[i])
-
-                    # 显示预合成草稿
-                    st.image(composite_img, caption="Pre-processed Draft Layout", width=400)
-
-                    # 2. 送入 OpenAI 进行 AI 风格统一与重构
-                    enhanced_edit_prompt = build_marketing_prompt(edit_instruction, ad_style)
+                    full_instruction = f"Based on reference grid ({', '.join([f'Image {i+1}' for i in range(len(raw_images))])}): {edit_instruction}"
+                    enhanced_edit_prompt = build_marketing_prompt(full_instruction, ad_style)
+                    
                     st.write("**Optimized Instruction sent to AI:**")
                     st.code(enhanced_edit_prompt, language="text")
 
-                    with st.spinner("AI is harmonizing photo styles, lighting, and rendering final ad visual..."):
+                    with st.spinner("AI is processing image references and generating visual..."):
                         client = ImageGenClient()
                         img_url = client.edit_ad_image(
                             pil_image=composite_img,
                             prompt=enhanced_edit_prompt,
                             size=img_size
                         )
-                        st.image(img_url, caption="Final AI Redesigned Ad Visual", use_container_width=True)
+                        st.image(img_url, caption="Final AI Designed Visual", use_container_width=True)
                         st.markdown(f"[📥 Download Full High-Res Image]({img_url})")
 
                 except Exception as e:
