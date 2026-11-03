@@ -14,7 +14,7 @@ class ImageGenClient:
 
     def generate_ad_image(self, prompt: str, size: str = "1024x1024", quality: str = "standard"):
         """
-        调用 gpt-image-1.5 模型生成广告图片，全兼容 URL 与 Base64 解析
+        调用 gpt-image-1.5 模型生成广告图片
         """
         try:
             response = self.client.images.generate(
@@ -24,26 +24,31 @@ class ImageGenClient:
                 n=1,
             )
             
-            image_obj = response.data[0]
+            # 拿到第一张图片对象
+            image_data = response.data[0]
             
-            # 1. 尝试直接获取 url 属性
-            url = getattr(image_obj, 'url', None)
+            # 安全提取 URL
+            url = None
+            if hasattr(image_data, 'url') and image_data.url:
+                url = image_data.url
+            elif isinstance(image_data, dict) and image_data.get('url'):
+                url = image_data['url']
+                
             if url:
                 return url
-                
-            # 2. 尝试获取 base64 属性
-            b64_json = getattr(image_obj, 'b64_json', None)
+
+            # 安全提取 Base64
+            b64_json = None
+            if hasattr(image_data, 'b64_json') and image_data.b64_json:
+                b64_json = image_data.b64_json
+            elif isinstance(image_data, dict) and image_data.get('b64_json'):
+                b64_json = image_data['b64_json']
+
             if b64_json:
                 return f"data:image/png;base64,{b64_json}"
-                
-            # 3. 如果是 dict 字典结构
-            if isinstance(image_obj, dict):
-                if image_obj.get('url'):
-                    return image_obj['url']
-                if image_obj.get('b64_json'):
-                    return f"data:image/png;base64,{image_obj['b64_json']}"
-            
-            raise Exception("API 没有返回有效图片链接或 Base64 数据。")
+
+            # 如果都没有获取到，抛出完整数据结构以便排查
+            raise Exception(f"API 返回数据无法解析，数据类型为: {type(image_data)}")
                 
         except Exception as e:
             raise Exception(f"OpenAI Image API Error: {str(e)}")
