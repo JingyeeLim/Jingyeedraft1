@@ -92,10 +92,10 @@ with tab2:
             layout_mode = st.radio(
                 "Combination / Stitching Mode",
                 [
-                    "Side-by-Side (左右拼接对决/对比)", 
-                    "Top-Bottom (上下拼接海报)", 
-                    "Overlay Sub-Image onto Main Image (小图/画中画叠加)",
-                    "2x2 Grid Collage (四格拼图)"
+                    "Side-by-Side", 
+                    "Top-Bottom", 
+                    "Overlay Sub-Image onto Main Image",
+                    "2x2 Grid Collage"
                 ]
             )
 
