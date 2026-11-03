@@ -4,7 +4,15 @@ from prompt_builder import build_marketing_prompt
 
 st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", layout="centered")
 
-st.title("🎯 Enterprise Marketing Image Generator")
+# 使用自定义 CSS 强制标题在一行内显示 (nowrap) 并微调字号
+st.markdown(
+    """
+    <h1 style='white-space: nowrap; font-size: 2rem; margin-bottom: 0.5rem;'>
+        🎯 Enterprise Marketing Image Generator
+    </h1>
+    """, 
+    unsafe_allow_html=True
+)
 st.caption("Internal tool to generate high-converting ad visuals via OpenAI Image API (gpt-image-1.5).")
 
 # Sidebar Configuration
