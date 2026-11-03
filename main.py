@@ -8,7 +8,7 @@ from prompt_builder import build_marketing_prompt
 
 st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", layout="centered")
 
-# 🔒 精准 CSS：彻底隐藏右上角 GitHub / 平台图标，强行保留左上角 Sidebar 展开与收起按钮
+# 🔒 精准 CSS：彻底隐藏右上角 GitHub / 平台图标 / 菜单，强行保留左上角 Sidebar 展开与收起按钮
 st.markdown(
     """
     <style>
@@ -24,7 +24,7 @@ st.markdown(
         display: none !important;
     }
     
-    /* 3. 🛡️ 核心强力保护：确保左上角的 Sidebar 展开/收起按钮永远可见、置顶可点击 */
+    /* 3. 🛡️ 核心保护：确保左上角 Sidebar 展开/收起按钮永远可见、置顶可点击 */
     button[data-testid="stHeaderIconButton"],
     [data-testid="stSidebarCollapseButton"] {
         display: inline-flex !important;
