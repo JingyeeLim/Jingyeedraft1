@@ -7,7 +7,7 @@ st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", la
 st.title("🎯 Enterprise Marketing Image Generator")
 st.caption("Internal tool to generate high-converting ad visuals via OpenAI DALL·E 3 (Chat access disabled).")
 
-# Sidebar Configuration (All English)
+# 侧边栏配置
 with st.sidebar:
     st.header("⚙️ Image Settings")
     ad_style = st.selectbox(
@@ -25,7 +25,7 @@ with st.sidebar:
     st.markdown("---")
     st.info("💡 **Cost Control Active**: Chat API endpoint is locked out to conserve company API tokens.")
 
-# Main Form Interface
+# 表单主体
 with st.form("ad_gen_form"):
     raw_prompt = st.text_area(
         "Ad Description / Product Concept",
@@ -45,6 +45,7 @@ if submit_btn:
         with st.spinner("Generating high-resolution image..."):
             try:
                 client = ImageGenClient()
+                # 调用的函数中不再传入 style 参数
                 img_url = client.generate_ad_image(
                     prompt=enhanced_prompt,
                     size=img_size,
