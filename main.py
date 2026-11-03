@@ -1,5 +1,7 @@
+import io
+import requests
 import streamlit as st
-from PIL import Image, ImageDraw
+from PIL import Image
 from openai_client import ImageGenClient
 from prompt_builder import build_marketing_prompt
 
@@ -13,7 +15,7 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
-st.caption("Internal tool to generate, edit & combine ad visuals via OpenAI Image API (gpt-image-1.5).")
+st.caption("Internal tool to generate & harmonize commercial ad visuals via OpenAI API.")
 
 with st.sidebar:
     st.header("⚙️ Image Settings")
@@ -31,14 +33,61 @@ with st.sidebar:
     st.markdown("---")
     st.info("💡 **Cost Control Active**: Chat API endpoint is locked out to conserve company API tokens.")
 
-tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Multi-Photo AI Studio"])
+tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Photo Harmonization (Single Photo Upload)"])
+
+def render_download_and_export_section(img_source):
+    """
+    Helper function to render multiformat downloads and quick editor options
+    """
+    st.markdown("---")
+    st.subheader("📥 Export Options & Next Steps")
+    
+    # Process PIL image for multi-format downloads
+    if isinstance(img_source, str):
+        response = requests.get(img_source)
+        pil_img = Image.open(io.BytesIO(response.content))
+    else:
+        pil_img = img_source
+
+    col_png, col_jpg = st.columns(2)
+    
+    # PNG Download Buffer
+    png_buf = io.BytesIO()
+    pil_img.save(png_buf, format="PNG")
+    with col_png:
+        st.download_button(
+            label="💾 Download HD PNG (Lossless)",
+            data=png_buf.getvalue(),
+            file_name="DrClearAligners_Ad_Visual.png",
+            mime="image/png",
+            use_container_width=True
+        )
+        
+    # JPG Download Buffer
+    jpg_buf = io.BytesIO()
+    rgb_img = pil_img.convert("RGB")
+    rgb_img.save(jpg_buf, format="JPEG", quality=95)
+    with col_jpg:
+        st.download_button(
+            label="💾 Download JPG (Web Compressed)",
+            data=jpg_buf.getvalue(),
+            file_name="DrClearAligners_Ad_Visual.jpg",
+            mime="image/jpeg",
+            use_container_width=True
+        )
+        
+    st.info(
+        "🎨 **Next Step for Marketing Team:**\n"
+        "- **Canva**: Open [Canva](https://www.canva.com/) -> Create Design -> Upload this rendered background to overlay DrClearAligners logo and Chinese typography.\n"
+        "- **Photoshop**: Import into PS to add vector logos, brand typography, or adjust curves."
+    )
 
 # --- Tab 1: Text-to-Image ---
 with tab1:
     with st.form("text_gen_form"):
         raw_prompt = st.text_area(
             "Ad Description / Product Concept",
-            placeholder="e.g., Ultra-clear invisible aligners placed on a pristine marble vanity table...",
+            placeholder="e.g., A pair of transparent aligners on a white marble table surrounded by light water droplets and clean morning light...",
             height=100
         )
         submit_btn1 = st.form_submit_button("🚀 Generate Ad Image", type="primary")
@@ -59,79 +108,48 @@ with tab1:
                         size=img_size
                     )
                     st.image(img_url, caption="Generated Ad Visual", use_container_width=True)
-                    st.markdown(f"[📥 Download Full High-Res Image]({img_url})")
+                    render_download_and_export_section(img_url)
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-# --- Tab 2: Multi-Photo AI Studio ---
+# --- Tab 2: Single Photo Upload & Redesign ---
 with tab2:
-    st.subheader("Upload Photos & Describe Design")
-    st.caption("Upload 1-4 reference images. Use tags like **Image 1**, **Image 2** in your instruction to guide the AI.")
+    st.subheader("Upload 1 Photo & Transform Scene")
+    st.caption("Upload a product or reference shot. AI will reimagine the background and studio lighting while keeping clean quality.")
     
-    uploaded_files = st.file_uploader(
-        "Upload Reference Photos (1-4 images)",
-        type=["png", "jpg", "jpeg"],
-        accept_multiple_files=True
+    uploaded_file = st.file_uploader(
+        "Upload Product Photo (PNG or JPG)",
+        type=["png", "jpg", "jpeg"]
     )
 
-    if uploaded_files:
-        raw_images = [Image.open(f).convert("RGBA") for f in uploaded_files[:4]]
+    if uploaded_file:
+        input_img = Image.open(uploaded_file).convert("RGBA")
+        st.image(input_img, caption="Original Uploaded Photo", width=300)
         
-        st.write("📸 **Uploaded Reference Images with IDs:**")
-        cols = st.columns(len(raw_images))
-        
-        tagged_images = []
-        for idx, img in enumerate(raw_images):
-            tag_name = f"Image {idx+1}"
-            with cols[idx]:
-                st.image(img, caption=f"🏷️ {tag_name}", use_container_width=True)
-            
-            tagged_img = img.copy()
-            draw = ImageDraw.Draw(tagged_img)
-            draw.rectangle([(10, 10), (160, 50)], fill=(0, 0, 0, 180))
-            draw.text((20, 15), tag_name, fill=(255, 255, 255, 255))
-            tagged_images.append(tagged_img)
-
         edit_instruction = st.text_area(
-            "Design Instruction (Use Image IDs freely)",
-            placeholder="e.g., Take the aligner from Image 1 and place it onto the bathroom table in Image 2. Add the logo from Image 3 on top right corner.",
-            height=100
+            "Redesign / Background Transformation Instruction",
+            placeholder="e.g., Place the transparent aligner onto a smooth marble countertop with soft morning sunbeams and delicate water droplets. Clean commercial studio photography.",
+            height=90
         )
 
-        if st.button("🚀 Process & Generate Visual", type="primary"):
+        if st.button("🚀 Transform Photo with AI", type="primary"):
             if not edit_instruction.strip():
-                st.warning("Please enter your design instruction using the Image IDs.")
+                st.warning("Please enter your design instruction.")
             else:
                 try:
-                    target_h = 400
-                    resized_imgs = []
-                    for img in tagged_images:
-                        w_new = int(img.width * target_h / img.height)
-                        resized_imgs.append(img.resize((w_new, target_h), Image.Resampling.LANCZOS))
-                    
-                    total_w = sum(img.width for img in resized_imgs)
-                    composite_img = Image.new("RGBA", (total_w, target_h), (255, 255, 255, 255))
-                    
-                    x_off = 0
-                    for img in resized_imgs:
-                        composite_img.paste(img, (x_off, 0), img)
-                        x_off += img.width
-
-                    full_instruction = f"Based on reference grid ({', '.join([f'Image {i+1}' for i in range(len(raw_images))])}): {edit_instruction}"
-                    enhanced_edit_prompt = build_marketing_prompt(full_instruction, ad_style)
-                    
+                    enhanced_edit_prompt = build_marketing_prompt(edit_instruction, ad_style)
                     st.write("**Optimized Instruction sent to AI:**")
                     st.code(enhanced_edit_prompt, language="text")
 
-                    with st.spinner("AI is processing image references and generating visual..."):
+                    with st.spinner("AI is harmonizing photo background and lighting..."):
                         client = ImageGenClient()
                         img_url = client.edit_ad_image(
-                            pil_image=composite_img,
+                            pil_image=input_img,
                             prompt=enhanced_edit_prompt,
                             size=img_size
                         )
-                        st.image(img_url, caption="Final AI Designed Visual", use_container_width=True)
-                        st.markdown(f"[📥 Download Full High-Res Image]({img_url})")
+                        st.image(img_url, caption="Final AI Harmonized Ad Visual", use_container_width=True)
+                        render_download_and_export_section(img_url)
 
                 except Exception as e:
                     st.error(f"Processing Error: {e}")
