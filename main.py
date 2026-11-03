@@ -122,7 +122,7 @@ def render_download_and_export_section(img_source):
             )
             
         st.info(
-            "🎨 **Next Step for Marketing Team:**\n"
+            "**Next Step for Marketing Team:**\n"
             "- **Canva**: Open [Canva](https://www.canva.com/) -> Create Design -> Upload this rendered background to overlay DrClearAligners logo and Chinese typography.\n"
             "- **Photoshop**: Import into PS to add vector logos, brand typography, or adjust curves."
         )
@@ -137,7 +137,7 @@ with tab1:
             placeholder="e.g., A pair of transparent aligners on a white marble table surrounded by light water droplets and clean morning light...",
             height=100
         )
-        submit_btn1 = st.form_submit_button("🚀 Generate Ad Image", type="primary")
+        submit_btn1 = st.form_submit_button("Generate Ad Image", type="primary")
 
     if submit_btn1:
         if not raw_prompt.strip():
@@ -179,7 +179,7 @@ with tab2:
             height=90
         )
 
-        if st.button("🚀 Transform Photo with AI", type="primary"):
+        if st.button("Transform Photo with AI", type="primary"):
             if not edit_instruction.strip():
                 st.warning("Please enter your design instruction.")
             else:
