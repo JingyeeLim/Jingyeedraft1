@@ -5,9 +5,9 @@ from prompt_builder import build_marketing_prompt
 st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", layout="centered")
 
 st.title("🎯 Enterprise Marketing Image Generator")
-st.caption("Internal tool to generate high-converting ad visuals via OpenAI DALL·E 3 (Chat access disabled).")
+st.caption("Internal tool to generate high-converting ad visuals via OpenAI Image API (gpt-image-1.5).")
 
-# 侧边栏配置
+# Sidebar Configuration
 with st.sidebar:
     st.header("⚙️ Image Settings")
     ad_style = st.selectbox(
@@ -25,7 +25,7 @@ with st.sidebar:
     st.markdown("---")
     st.info("💡 **Cost Control Active**: Chat API endpoint is locked out to conserve company API tokens.")
 
-# 表单主体
+# Main Form Interface
 with st.form("ad_gen_form"):
     raw_prompt = st.text_area(
         "Ad Description / Product Concept",
@@ -39,13 +39,12 @@ if submit_btn:
         st.warning("Please input a description for the image.")
     else:
         enhanced_prompt = build_marketing_prompt(raw_prompt, ad_style)
-        st.write("**Optimized Prompt sent to DALL·E 3:**")
+        st.write("**Optimized Prompt sent to OpenAI API:**")
         st.code(enhanced_prompt, language="text")
         
         with st.spinner("Generating high-resolution image..."):
             try:
                 client = ImageGenClient()
-                # 调用的函数中不再传入 style 参数
                 img_url = client.generate_ad_image(
                     prompt=enhanced_prompt,
                     size=img_size,
