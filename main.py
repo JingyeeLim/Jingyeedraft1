@@ -70,7 +70,7 @@ with st.expander("⚙️ Image Generation Settings (Global Presets)", expanded=T
 
 st.markdown("---")
 
-tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Photo Harmonization (Single Photo Upload)"])
+tab1, tab2 = st.tabs(["Text-to-Image", "Photo Harmonization"])
 
 def render_download_and_export_section(img_source):
     """
