@@ -14,7 +14,7 @@ class ImageGenClient:
 
     def generate_ad_image(self, prompt: str, size: str = "1024x1024", quality: str = "standard"):
         """
-        调用 gpt-image-1.5 模型生成广告图片
+        文生图功能 (Text-to-Image)
         """
         try:
             response = self.client.images.generate(
@@ -23,32 +23,37 @@ class ImageGenClient:
                 size=size,
                 n=1,
             )
-            
-            # 拿到第一张图片对象
-            image_data = response.data[0]
-            
-            # 安全提取 URL
-            url = None
-            if hasattr(image_data, 'url') and image_data.url:
-                url = image_data.url
-            elif isinstance(image_data, dict) and image_data.get('url'):
-                url = image_data['url']
-                
+            img_item = response.data[0]
+            url = getattr(img_item, 'url', None)
             if url:
                 return url
-
-            # 安全提取 Base64
-            b64_json = None
-            if hasattr(image_data, 'b64_json') and image_data.b64_json:
-                b64_json = image_data.b64_json
-            elif isinstance(image_data, dict) and image_data.get('b64_json'):
-                b64_json = image_data['b64_json']
-
-            if b64_json:
-                return f"data:image/png;base64,{b64_json}"
-
-            # 如果都没有获取到，抛出完整数据结构以便排查
-            raise Exception(f"API 返回数据无法解析，数据类型为: {type(image_data)}")
-                
+            b64 = getattr(img_item, 'b64_json', None)
+            if b64:
+                return f"data:image/png;base64,{b64}"
+            raise Exception("No valid image data returned.")
         except Exception as e:
             raise Exception(f"OpenAI Image API Error: {str(e)}")
+
+    def edit_ad_image(self, image_file, prompt: str, size: str = "1024x1024"):
+        """
+        图生图/参考图片修改功能 (Image-to-Image Edit)
+        """
+        try:
+            # 调用图片编辑接口，传入参考图与修改 Prompt
+            response = self.client.images.edit(
+                model="gpt-image-1.5",
+                image=image_file,
+                prompt=prompt,
+                size=size,
+                n=1,
+            )
+            img_item = response.data[0]
+            url = getattr(img_item, 'url', None)
+            if url:
+                return url
+            b64 = getattr(img_item, 'b64_json', None)
+            if b64:
+                return f"data:image/png;base64,{b64}"
+            raise Exception("No valid image data returned from Edit API.")
+        except Exception as e:
+            raise Exception(f"OpenAI Image Edit Error: {str(e)}")
