@@ -77,7 +77,7 @@ with tab2:
 
     logo_position = st.selectbox(
         "Logo Overlay Position",
-        ["Top Right (右上角)", "Bottom Right (右下角)", "Top Left (左上角)", "Bottom Left (左下角)"]
+        ["Top Right", "Bottom Right", "Top Left", "Bottom Left"]
     )
     
     logo_size_ratio = st.slider("Logo Size Ratio", min_value=0.1, max_value=0.4, value=0.2, step=0.05)
