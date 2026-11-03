@@ -8,14 +8,28 @@ from prompt_builder import build_marketing_prompt
 
 st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", layout="centered")
 
-# 隐藏 Streamlit 顶部菜单、GitHub 源码按钮与页脚，保护源码入口
+# 修复 Sidebar 收起后无法重新打开的问题，同时隐藏 GitHub 源码入口
 st.markdown(
     """
     <style>
+    /* 隐藏 Streamlit 默认顶部菜单与页脚 */
     #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
     footer {visibility: hidden;}
-    .stAppHeader {display: none;}
+    
+    /* 隐藏顶部 GitHub 源码及 Streamlit 徽章链接 */
+    .stAppHeader {background-color: transparent;}
+    header [data-testid="stHeader"] {display: none;}
+    
+    /* 🛡️ 核心修复：强行保证 Sidebar 的展开/收起按钮图标永远可见且可点击 */
+    [data-testid="stSidebarCollapseButton"] {
+        display: block !important;
+        visibility: visible !important;
+        z-index: 999999 !important;
+    }
+    button[data-testid="baseButton-header"] {
+        display: block !important;
+        visibility: visible !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
