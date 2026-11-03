@@ -8,6 +8,19 @@ from prompt_builder import build_marketing_prompt
 
 st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", layout="centered")
 
+# 隐藏 Streamlit 顶部菜单、GitHub 源码按钮与页脚，保护源码入口
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stAppHeader {display: none;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 st.markdown(
     """
     <h1 style='white-space: nowrap; font-size: 2rem; margin-bottom: 0.5rem;'>
@@ -39,7 +52,7 @@ tab1, tab2 = st.tabs(["✨ Text-to-Image", "🖼️ Photo Harmonization (Single 
 def render_download_and_export_section(img_source):
     """
     Helper function to render multiformat downloads and quick editor options.
-    Supports HTTP URLs, Base64 data strings, and PIL Image objects.
+    Supports HTTP URLs, Base64 data strings, and PIL Image objects safely.
     """
     st.markdown("---")
     st.subheader("📥 Export Options & Next Steps")
