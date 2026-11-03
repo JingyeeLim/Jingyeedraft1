@@ -7,12 +7,17 @@ st.set_page_config(page_title="Enterprise AI Ad Generator", page_icon="🎨", la
 st.title("🎯 Enterprise Marketing Image Generator")
 st.caption("Internal tool to generate high-converting ad visuals via OpenAI DALL·E 3 (Chat access disabled).")
 
-# 侧边栏配置
+# Sidebar Configuration (All English)
 with st.sidebar:
     st.header("⚙️ Image Settings")
     ad_style = st.selectbox(
         "Ad Style Preset",
-        ["Commercial Studio (商业摄影)", "3D Tech Render (3D 科技感)", "Minimalist Banner (极简海报)", "Cinematic Lifestyle (生活场景)"]
+        [
+            "Commercial Studio Photography",
+            "3D Render & Aesthetic Micro-Shot",
+            "Minimalist Medical & Beauty Banner",
+            "Cinematic Lifestyle & Smile Shot"
+        ]
     )
     img_size = st.selectbox("Resolution", ["1024x1024", "1024x1792", "1792x1024"])
     img_quality = st.selectbox("Quality", ["standard", "hd"])
@@ -20,11 +25,11 @@ with st.sidebar:
     st.markdown("---")
     st.info("💡 **Cost Control Active**: Chat API endpoint is locked out to conserve company API tokens.")
 
-# 表单主体 (物理隔离 Chat 接口)
+# Main Form Interface
 with st.form("ad_gen_form"):
     raw_prompt = st.text_area(
         "Ad Description / Product Concept",
-        placeholder="e.g., A wireless noise-canceling headphone resting on a polished wooden desk with coffee cup...",
+        placeholder="e.g., Ultra-clear invisible aligners placed on a pristine marble vanity table next to a glass of sparkling water...",
         height=100
     )
     submit_btn = st.form_submit_button("🚀 Generate Ad Image", type="primary")
@@ -45,7 +50,6 @@ if submit_btn:
                     size=img_size,
                     quality=img_quality
                 )
-                # 使用最新版 Streamlit 的 use_container_width 参数
                 st.image(img_url, caption="Generated Ad Visual", use_container_width=True)
                 st.markdown(f"[📥 Download Full High-Res Image]({img_url})")
             except Exception as e:
