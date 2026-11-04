@@ -1,4 +1,5 @@
 import os
+import requests
 import streamlit as st
 from openai import OpenAI
 from prompt_builder import build_marketing_prompt
@@ -47,7 +48,7 @@ with st.form("ad_generation_form"):
                 "Before and After Comparison"
             ],
             index=0
-        )
+            )
         generate_ad_copy = st.checkbox("📝 Also generate social media Ad Copy (FB/IG)", value=True)
 
     with col_sizes:
@@ -133,14 +134,36 @@ if submit_button:
                 st.markdown(f"**{size_name}**")
                 with st.spinner(f"Rendering {size_name}..."):
                     try:
+                        # 显式使用 response_format="url" 防止返回 None
                         res = client.images.generate(
                             model="gpt-image-2",
                             prompt=master_prompt,
                             size=target_size,
+                            response_format="url",
                             n=1
                         )
-                        image_url = res.data[0].url
-                        st.image(image_url, caption=f"DrClearAligners - {size_name}", use_container_width=True)
+                        
+                        if res and res.data and len(res.data) > 0 and res.data[0].url:
+                            image_url = res.data[0].url
+                            st.image(image_url, caption=f"DrClearAligners - {size_name}", use_container_width=True)
+                            
+                            # 下载按钮模块 (Download Image Functionality)
+                            try:
+                                img_bytes = requests.get(image_url).content
+                                file_name_clean = f"DrClearAligners_{target_size}.png"
+                                st.download_button(
+                                    label="📥 Download Image (PNG)",
+                                    data=img_bytes,
+                                    file_name=file_name_clean,
+                                    mime="image/png",
+                                    key=f"dl_btn_{idx}",
+                                    use_container_width=True
+                                )
+                            except Exception as dl_err:
+                                st.caption("⚠️ Direct download preview failed. You can right-click the image above to save.")
+                        else:
+                            st.error(f"Failed to fetch image URL for {size_name}.")
+
                     except Exception as e:
                         st.error(f"Failed to generate {size_name}: {str(e)}")
 
@@ -153,4 +176,4 @@ if submit_button:
                     copy_text = generate_marketing_copy(user_input, ad_style_preset, api_key)
                     st.info(copy_text)
                 except Exception as e:
-                    st.warning(f"Could not generate ad copy: {str(e)}")
+                        st.warning(f"Could not generate ad copy: {str(e)}")
