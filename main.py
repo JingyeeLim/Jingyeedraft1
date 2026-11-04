@@ -77,7 +77,7 @@ SIZE_MAPPING = {
     "16:9 Landscape (1792x1024)": "1792x1024"
 }
 
-# Helper function to generate Ad Copy via gpt-5.4-mini
+# Helper function to generate Ad Copy via gpt-4o
 def generate_marketing_copy(user_concept: str, ad_style: str, api_key: str) -> str:
     client = OpenAI(api_key=api_key)
     system_prompt = """You are a high-converting conversion copywriter for DrClearAligners.
@@ -89,7 +89,7 @@ Each caption must include:
 Keep the tone modern, confident, clean, and appealing to young professionals."""
 
     response = client.chat.completions.create(
-        model="gpt-5.4-mini",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Ad Style: {ad_style}\nCampaign Concept: {user_concept}"}
@@ -110,13 +110,13 @@ if submit_button:
     elif not user_input.strip():
         st.warning("⚠️ Please enter an image concept description.")
     else:
-        # Step A: Refine Prompt using gpt-5.4-mini
-        with st.spinner("🧠 Visual Director (gpt-5.4-mini) is refining the master prompt..."):
+        # Step A: Refine Prompt using gpt-4o
+        with st.spinner("🧠 Visual Director (gpt-4o) is refining the master prompt..."):
             master_prompt = build_marketing_prompt(user_input, ad_style_preset)
             
         st.success("✨ Master Prompt Ready!")
         with st.expander("🔍 View Final Technical Prompt sent to OpenAI API"):
-            st.code(master_prompt, language="text")
+            st.code(str(master_prompt), language="text")
 
         # Step B: Render Images using gpt-image-2 Model
         st.markdown("---")
@@ -142,11 +142,11 @@ if submit_button:
                     except Exception as e:
                         st.error(f"Failed to generate {size_name}: {str(e)}")
 
-        # Step C: Generate Social Media Ad Copy via gpt-5.4-mini
+        # Step C: Generate Social Media Ad Copy via gpt-4o
         if generate_ad_copy:
             st.markdown("---")
             st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
-            with st.spinner("✍️ gpt-5.4-mini is crafting high-converting ad copy..."):
+            with st.spinner("✍️ gpt-4o is crafting high-converting ad copy..."):
                 try:
                     copy_text = generate_marketing_copy(user_input, ad_style_preset, api_key)
                     st.info(copy_text)
