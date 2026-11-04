@@ -8,42 +8,69 @@ st.set_page_config(
     page_title="DrClearAligners - AI Ad Image Generator",
     page_icon="🦷",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# 2. UI Header & Title
+# 2. Hide Streamlit Header, GitHub / Deploy Icon, Main Menu & Footer via Custom CSS
+hide_st_style = """
+    <style>
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stAppHeader {display: none;}
+    </style>
+"""
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# 3. Main Header & Title
 st.title("🦷 DrClearAligners Enterprise Visual Portal")
 st.markdown(
     "Generate realistic, high-converting commercial advertising images and matching ad copy for DrClearAligners."
 )
 
-# 3. Sidebar Controls
-st.sidebar.header("⚙️ Campaign Settings")
+st.markdown("---")
 
-# Style Presets
-ad_style_preset = st.sidebar.selectbox(
-    "Select Advertising Style Preset:",
-    options=[
-        "Commercial Studio Photography",
-        "Cinematic Lifestyle & Smile Shot",
-        "Minimalist Medical & Beauty Banner",
-        "3D Render & Aesthetic Micro-Shot",
-        "Before and After Comparison"
-    ],
-    index=0
-)
+# 4. Form & Campaign Controls in a Single Page Layout
+with st.form("ad_generation_form"):
+    st.subheader("📋 Campaign Configuration")
+    
+    # Grid layout for options on the main page
+    col_preset, col_sizes = st.columns([1, 1])
+    
+    with col_preset:
+        ad_style_preset = st.selectbox(
+            "Select Advertising Style Preset:",
+            options=[
+                "Commercial Studio Photography",
+                "Cinematic Lifestyle & Smile Shot",
+                "Minimalist Medical & Beauty Banner",
+                "3D Render & Aesthetic Micro-Shot",
+                "Before and After Comparison"
+            ],
+            index=0
+        )
+        
+        generate_ad_copy = st.checkbox("📝 Also generate social media Ad Copy (FB/IG)", value=True)
 
-# Multi-Aspect Ratio Selection (Only generate selected sizes to avoid credit waste)
-st.sidebar.subheader("📐 Image Output Dimensions")
-selected_sizes = st.sidebar.multiselect(
-    "Select required aspect ratios:",
-    options=["1:1 Square (1024x1024)", "9:16 Story/Reels (1024x1792)", "16:9 Landscape (1792x1024)"],
-    default=["1:1 Square (1024x1024)"],
-    help="Select only the dimensions you need for your campaign to save API credits."
-)
+    with col_sizes:
+        selected_sizes = st.multiselect(
+            "Select required aspect ratios (Generates only selected sizes):",
+            options=["1:1 Square (1024x1024)", "9:16 Story/Reels (1024x1792)", "16:9 Landscape (1792x1024)"],
+            default=["1:1 Square (1024x1024)"],
+            help="Select only the dimensions you need for your campaign to save API credits."
+        )
 
-# Toggle for Ad Copy Generation
-generate_ad_copy = st.sidebar.checkbox("📝 Also generate social media Ad Copy (FB/IG)", value=True)
+    st.markdown("---")
+    st.subheader("💡 Image Concept Description")
+    
+    user_input = st.text_area(
+        "Enter your image description or concept:",
+        value="A confident young woman smiling naturally with transparent clear aligners in a bright minimalist living room.",
+        height=100,
+        placeholder="e.g., A macro close-up of crystal-clear aligner resting on white marble with morning sunlight."
+    )
+    
+    submit_button = st.form_submit_button("🚀 Generate Ad Visuals", use_container_width=True)
 
 # Size Mapping Table for OpenAI API
 SIZE_MAPPING = {
@@ -76,17 +103,6 @@ def generate_marketing_copy(user_concept: str, ad_style: str, api_key: str) -> s
     )
     return response.choices[0].message.content.strip()
 
-# 4. Main Workspace Form
-with st.form("ad_generation_form"):
-    user_input = st.text_area(
-        "Enter your image description or concept:",
-        value="A confident young woman smiling naturally with transparent clear aligners in a bright minimalist living room.",
-        height=100,
-        placeholder="e.g., A macro close-up of crystal-clear aligner resting on white marble with morning sunlight."
-    )
-    
-    submit_button = st.form_submit_button("🚀 Generate Ad Visuals", use_container_width=True)
-
 # 5. Generation Process Flow
 if submit_button:
     api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -94,7 +110,7 @@ if submit_button:
     if not api_key:
         st.error("❌ OpenAI API Key not found! Please configure OPENAI_API_KEY in Streamlit Secrets or Environment Variables.")
     elif not selected_sizes:
-        st.warning("⚠️ Please select at least one image dimension from the sidebar before generating.")
+        st.warning("⚠️ Please select at least one image dimension before generating.")
     elif not user_input.strip():
         st.warning("⚠️ Please enter an image concept description.")
     else:
