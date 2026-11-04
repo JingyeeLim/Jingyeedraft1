@@ -10,8 +10,8 @@ import os
 
 # 设置页面，默认收起/不使用 Sidebar 菜单
 st.set_page_config(
-    page_title="Enterprise AI Ad Generator", 
-    page_icon="🎨", 
+    page_title="DrClearAligners Marketing Ad Generator", 
+    page_icon="🦷", 
     layout="centered",
     initial_sidebar_state="collapsed"
 )
