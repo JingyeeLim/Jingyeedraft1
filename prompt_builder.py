@@ -4,83 +4,74 @@ from openai import OpenAI
 
 def build_marketing_prompt(user_input: str, ad_style: str) -> str:
     """
-    使用 GPT-4o 充当顶级商业视觉总监，把用户的简单想法扩写为专业级商业广告 Prompt。
-    内置了商业光影、材质折射、人像真实感约束以及抗 AI 畸变规则。
+    Dynamically refines user input using GPT-4o into a professional commercial ad prompt.
+    Supports both standard clear aligner ads and comparison ads (metal braces vs clear aligners).
     """
-    # 1. 尝试从 Streamlit Secrets 或环境变量读取 API Key
     api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
     
-    # 2. 兜底机制：若无 Key，退回到基础规则拼接
     if not api_key:
         return (
             f"Commercial photography for DrClearAligners, {ad_style} style: {user_input}. "
-            f"Ultra-clean lighting, high-resolution medical thermoplastic clear aligners, "
-            f"8k resolution, professional advertising aesthetic."
+            f"100% crystal-clear transparent plastic aligner tray, zero metal wires, zero brackets, "
+            f"ultra-clean aesthetics, 8k resolution."
         )
 
     client = OpenAI(api_key=api_key)
     
-    # 3. 核心 System Prompt：定义 GPT-4o 的 AI 视觉总监角色与限制
     system_prompt = """
-    You are an award-winning Commercial Visual Director and Prompt Engineer for DrClearAligners (a premium clear aligners dental brand).
-    Your task is to take a brief user request and transform it into a single, master-level text prompt for AI image generation.
+    You are an expert commercial advertising visual director for DrClearAligners.
+    Your task is to convert brief marketing requests into high-impact English image generation prompts.
 
-    STRICT GUIDELINES FOR PROMPT CONSTRUCTION:
+    INTENT-BASED PRODUCT LOGIC:
 
-    1. PRODUCT REALISM (DRCLEARALIGNERS):
-       - Clear aligners must look like medical-grade, crystal-clear, ultra-thin thermoplastic.
-       - Highlight subtle light refractions, pristine optical clarity, smooth contours, and custom precision fit.
+    1. CASE A: COMPARISON ADS (Triggered if user mentions "comparison", "vs", "before and after", "traditional braces", or "versus")
+       - Explicitly describe a split-screen or side-by-side comparison layout.
+       - SIDE 1 (Traditional Braces): Show metal braces with visible silver brackets, metal dots, and archwires.
+       - SIDE 2 (DrClearAligners): Show a sleek, 100% crystal-clear transparent thermoplastic aligner tray with zero metal.
+       - Ensure clear visual contrast highlighting the aesthetic advantage of DrClearAligners.
 
-    2. HUMAN MODEL & AESTHETIC REALISM (If models are present):
-       - Natural, warm, and authentic expressions (AVOID robotic or uncanny 'AI-stare').
-       - Real human skin texture with subtle pores, natural warmth, and authentic teeth anatomy.
-       - Natural jawlines and realistic smile dynamics.
+    2. CASE B: STANDARD PRODUCT & LIFESTYLE ADS (Default mode for all other requests)
+       - ABSOLUTELY NO METAL BRACES, NO METAL WIRES, NO SILVER BRACKETS, NO METAL DOTS ON TEETH.
+       - DO NOT use the word "braces". Use "transparent clear aligner", "invisible thermoplastic tray", or "seamless clear aligner".
+       - The product MUST be explicitly described as an ultra-thin, smooth, 100% crystal-clear transparent plastic tray resting invisibly over teeth.
 
-    3. COMMERCIAL ADVERTISING & LIGHTING:
-       - Incorporate specific commercial photography parameters: soft studio rim lighting, 85mm f/1.8 lens depth of field, subtle shadow falloff, high-end editorial look.
-       - Focus on premium pastel, marble, bright daylight, or luxury aesthetic environments.
+    GENERAL COMMERCIAL ADVERTISING RULES:
+    - Human Models: Natural skin textures with warmth, authentic smiles, anatomically correct dental structure. Avoid plastic AI looks.
+    - Lighting & Camera: 85mm f/1.8 studio lens, soft lighting, commercial editorial quality.
+    - Branding Space: DO NOT render any logos, text, or letters inside the image. Keep clean negative space at top or bottom for official logo overlay.
 
-    4. COMPOSITION & LOGO OVERLAY PREPARATION:
-       - Ensure clean negative space (top or bottom area) to allow marketing teams to overlay official brand logos and typography later.
-       - DO NOT render text, letters, or fake company logos inside the image.
-
-    5. OUTPUT FORMAT:
-       - Output ONLY the final enhanced English prompt. No greetings, no explanations, no quotes.
+    OUTPUT FORMAT:
+    - Output ONLY the final enhanced English prompt. No explanations, no markdown intro, no quotes.
     """
 
-    # 4. User Prompt 构建：结合当前选择的 Style Preset
     user_prompt = f"""
-    Target Brand: DrClearAligners
-    Selected Ad Style Preset: {ad_style}
-    User's Input Concept: {user_input}
+    Brand Context: DrClearAligners
+    Ad Style Preset: {ad_style}
+    User Concept: {user_input}
 
-    Please rewrite and expand this concept into a stunning, detailed commercial photography prompt.
+    Analyze the user concept. If it is a comparison request, generate a side-by-side comparison prompt. Otherwise, generate a 100% clear aligner prompt without any metal components.
     """
 
     try:
-        # 调用 GPT-4o 进行智能扩写
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.6,
+            temperature=0.5,
             max_tokens=300
         )
         
         enhanced_prompt = response.choices[0].message.content.strip()
-        
-        # 移除可能误生成的包裹引号
         if enhanced_prompt.startswith('"') and enhanced_prompt.endswith('"'):
             enhanced_prompt = enhanced_prompt[1:-1]
             
         return enhanced_prompt
 
     except Exception as e:
-        # 如果 API 调用遇到限制或异常，自动降级为规则扩写，保证前端依然可出图
         return (
             f"Commercial advertising shot for DrClearAligners, {ad_style} style: {user_input}. "
-            f"Featuring crystal-clear transparent aligners, soft studio window lighting, depth of field, "
-            f"ultra-clean aesthetics, luxury commercial photography, 8k."
+            f"Featuring 100% crystal-clear transparent plastic aligners, zero metal brackets, "
+            f"ultra-clean aesthetics, soft studio lighting, 8k resolution."
         )
