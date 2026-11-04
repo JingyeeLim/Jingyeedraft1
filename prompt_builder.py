@@ -5,40 +5,30 @@ from openai import OpenAI
 def build_marketing_prompt(user_input: str, ad_style: str) -> str:
     """
     Dynamically refines user input using gpt-5.4-mini into a professional commercial ad prompt.
-    Enforces full aligner coverage extending completely to the gumline.
+    Enforces strict full-coverage clear aligner geometry extending completely to the gingival margin/gumline.
     """
     api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
     
     if not api_key:
         return (
             f"Commercial photography for DrClearAligners, {ad_style} style: {user_input}. "
-            f"100% crystal-clear transparent plastic aligner tray fully covering all teeth up to the gumline, "
-            f"zero metal wires, 8k resolution."
+            f"100% seamless transparent clear aligner tray fully encasing each tooth from the cutting edge straight up into the gumline (gingival margin). "
+            f"The aligner forms a smooth continuous transparent shell right up to the pink gums, zero gaps, zero half-coverage, zero metal wires, 8k resolution."
         )
 
     client = OpenAI(api_key=api_key)
     
     system_prompt = """You are an expert commercial advertising visual director for DrClearAligners.
-Your task is to convert brief marketing requests into high-impact English image generation prompts.
+Your primary job is to write ultra-precise image generation prompts that force the AI image generator to render anatomically correct, full-coverage clear aligners.
 
-CRITICAL ALIGNER FIT & GEOMETRY RULES (MUST FOLLOW):
-1. FULL TOOTH COVERAGE: The transparent aligner tray MUST fully encase and cover every tooth entirely, extending all the way up to the gumline (gingival margin).
-2. NO PARTIAL MASKING: Do NOT render aligners that only cover half of the tooth or just the bottom edges. It must be a complete, custom-molded thermoplastic shell over the full surface of upper and lower teeth.
-3. NO METAL COMPONENTS: Absolutely no metal braces, wires, or brackets (unless user explicitly requests a comparison ad).
+CRITICAL HARD-RULES FOR CLEAR ALIGNERS (MUST ENFORCE IN PROMPT):
+1. FULL GUM-TO-TOOTH ENCLOSURE: The clear aligner MUST be described as a single continuous transparent thermoplastic shell that extends ALL THE WAY UP into the pink gumline (gingival margin). It must completely cover 100% of the tooth surface from top to bottom.
+2. STRICT NEGATIVE INSTRUCTIONS: Explicitly forbid half-covered teeth, partial trays, lower-edge-only caps, metal brackets, wires, or visible dots/buttons on teeth.
+3. VISUAL TEXTURE: Describe it as "crystal-clear, ultra-thin, smooth glossy transparent plastic shell hugging the entire upper and lower arches perfectly up to the pink gingival tissue boundary."
 
-INTENT-BASED PRODUCT LOGIC:
-1. CASE A: COMPARISON ADS (Triggered if user mentions "comparison", "vs", "before and after", "traditional braces", or "versus")
-   - Explicitly describe a split-screen or side-by-side layout.
-   - LEFT (Before/Traditional): Misaligned teeth or traditional metal braces.
-   - RIGHT (After/DrClearAligners): Straight white teeth fully encased in crystal-clear aligners extending completely to the gumline.
-
-2. CASE B: STANDARD PRODUCT & LIFESTYLE ADS (Default mode)
-   - Sleek, 100% crystal-clear, ultra-thin transparent thermoplastic tray covering teeth fully from edge to gumline.
-
-GENERAL COMMERCIAL ADVERTISING RULES:
-- Human Models: Natural skin textures with warmth, authentic smiles, anatomically correct dental structure.
-- Lighting & Camera: 85mm f/1.8 studio lens, soft lighting, commercial editorial quality.
-- Branding Space: DO NOT render any logos, text, or letters inside the image. Keep clean negative space at top or bottom for official logo overlay.
+INTENT-BASED ADVERTISING LOGIC:
+- If user requests lifestyle/portrait: Describe a warm, confident smile with realistic natural skin texture, soft commercial studio lighting, showing the full-coverage invisible aligners up to the gums clearly upon close inspection.
+- If user requests product/macro: Close-up macro focusing on the continuous transparent edge overlapping the gumline seamlessly.
 
 OUTPUT FORMAT:
 - Output ONLY the final enhanced English prompt. No explanations, no markdown intro, no quotes."""
@@ -47,7 +37,7 @@ OUTPUT FORMAT:
 Ad Style Preset: {ad_style}
 User Concept: {user_input}
 
-Please build an expanded prompt ensuring the clear aligner fully covers the entire teeth up to the gumline with no partial coverage errors."""
+Please write an expanded prompt. CRITICAL INSTRUCTION: Emphasize that the clear aligner is a full-coverage tray that extends ALL THE WAY UP TO AND TOUCHES THE PINK GUMLINE (gingival margin), leaving no exposed upper tooth surface."""
 
     try:
         response = client.chat.completions.create(
@@ -56,8 +46,8 @@ Please build an expanded prompt ensuring the clear aligner fully covers the enti
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.5,
-            max_completion_tokens=300
+            temperature=0.4,  # 稍微降低随机性，增强指令遵从度
+            max_completion_tokens=350
         )
         
         enhanced_prompt = response.choices[0].message.content.strip()
@@ -69,6 +59,5 @@ Please build an expanded prompt ensuring the clear aligner fully covers the enti
     except Exception as e:
         return (
             f"Commercial advertising shot for DrClearAligners, {ad_style} style: {user_input}. "
-            f"Featuring 100% crystal-clear transparent plastic aligners fully covering all teeth up to the gumline, "
-            f"ultra-clean aesthetics, soft studio lighting, 8k resolution."
-            )
+            f"Ultra-detailed close-up of a smiling model wearing seamless, 100% full-coverage crystal-clear transparent aligner trays extending entirely up to the pink gumline (gingival margin), glossy smooth texture, studio lighting, 8k resolution."
+        )
