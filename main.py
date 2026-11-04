@@ -96,7 +96,7 @@ with st.expander("⚙️ Image Generation Settings (Global Presets)", expanded=T
         # 多选尺寸，防止不必要的 API 额度浪费
         selected_sizes = st.multiselect(
             "Select required aspect ratios:",
-            options=["1024x1024", "1024x1792", "1792x1024"],
+            options=["1024x1024", "1024x1536", "1536x1024"],
             default=["1024x1024"],
             help="Generates only the checked resolutions to save API credits."
         )
