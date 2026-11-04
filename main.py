@@ -1,85 +1,60 @@
-import os
+import io
+import base64
 import requests
 import streamlit as st
-from openai import OpenAI
+from PIL import Image
+from openai_client import ImageGenClient
 from prompt_builder import build_marketing_prompt
+from openai import OpenAI
+import os
 
-# 1. Page Configuration
+# 设置页面，默认收起/不使用 Sidebar 菜单
 st.set_page_config(
-    page_title="DrClearAligners - AI Ad Image Generator",
-    page_icon="🦷",
-    layout="wide",
+    page_title="Enterprise AI Ad Generator", 
+    page_icon="🎨", 
+    layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# 2. Hide Streamlit Header, GitHub / Deploy Icon, Main Menu & Footer via Custom CSS
-hide_st_style = """
-<style>
-#MainMenu {visibility: hidden;}
-header {visibility: hidden;}
-footer {visibility: hidden;}
-.stAppHeader {display: none;}
-</style>
-"""
-st.markdown(hide_st_style, unsafe_allow_html=True)
-
-# 3. Main Header & Title
-st.title("🦷 DrClearAligners Enterprise Visual Portal")
+# 🔒 彻底隐藏顶部 Header (GitHub 链接、Logo)、页脚以及 Sidebar 侧栏
 st.markdown(
-    "Generate realistic, high-converting commercial advertising images and matching ad copy for DrClearAligners."
+    """
+    <style>
+    /* 1. 彻底隐藏 Header 顶栏（包含所有 GitHub / 部署图标）、主菜单与页脚 */
+    header {display: none !important;}
+    #MainMenu {visibility: hidden !important;}
+    footer {visibility: hidden !important;}
+    
+    /* 2. 彻底隐藏侧边栏及其切换按钮 */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarExpandButton"] {
+        display: none !important;
+    }
+    
+    /* 3. 优化主界面顶部的边距 */
+    .block-container {
+        padding-top: 2rem !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
-st.markdown("---")
-
-# 4. Form & Campaign Controls in Single Page Layout
-with st.form("ad_generation_form"):
-    st.subheader("📋 Campaign Configuration")
-    
-    col_preset, col_sizes = st.columns([1, 1])
-    
-    with col_preset:
-        ad_style_preset = st.selectbox(
-            "Select Advertising Style Preset:",
-            options=[
-                "Commercial Studio Photography",
-                "Cinematic Lifestyle & Smile Shot",
-                "Minimalist Medical & Beauty Banner",
-                "3D Render & Aesthetic Micro-Shot",
-                "Before and After Comparison"
-            ],
-            index=0
-            )
-        generate_ad_copy = st.checkbox("📝 Also generate social media Ad Copy (FB/IG)", value=True)
-
-    with col_sizes:
-        selected_sizes = st.multiselect(
-            "Select required aspect ratios (Generates only selected sizes):",
-            options=["1:1 Square (1024x1024)", "9:16 Story/Reels (1024x1792)", "16:9 Landscape (1792x1024)"],
-            default=["1:1 Square (1024x1024)"],
-            help="Select only the dimensions you need for your campaign to save API credits."
-        )
-
-    st.markdown("---")
-    st.subheader("💡 Image Concept Description")
-    
-    user_input = st.text_area(
-        "Enter your image description or concept:",
-        value="A confident young woman smiling naturally with transparent clear aligners in a bright minimalist living room.",
-        height=100,
-        placeholder="e.g., A macro close-up of crystal-clear aligner resting on white marble with morning sunlight."
-    )
-    
-    submit_button = st.form_submit_button("🚀 Generate Ad Visuals", use_container_width=True)
-
-# Size Mapping Table for API
-SIZE_MAPPING = {
-    "1:1 Square (1024x1024)": "1024x1024",
-    "9:16 Story/Reels (1024x1792)": "1024x1792",
-    "16:9 Landscape (1792x1024)": "1792x1024"
-}
+# 页面主标题
+st.markdown(
+    """
+    <h1 style='white-space: nowrap; font-size: 2rem; margin-bottom: 0.5rem;'>
+        Enterprise Marketing Image Generator
+    </h1>
+    """, 
+    unsafe_allow_html=True
+)
+st.caption("Internal tool to generate & harmonize commercial ad visuals via OpenAI API.")
 
 # Helper function to generate Ad Copy via gpt-5.4-mini
-def generate_marketing_copy(user_concept: str, ad_style: str, api_key: str) -> str:
+def generate_marketing_copy(user_concept: str, ad_style: str) -> str:
+    api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=api_key)
     system_prompt = """You are a high-converting conversion copywriter for DrClearAligners.
 Based on the user's campaign theme, write 3 engaging Facebook/Instagram ad caption options.
@@ -100,80 +75,177 @@ Keep the tone modern, confident, clean, and appealing to young professionals."""
     )
     return response.choices[0].message.content.strip()
 
-# 5. Generation Process Flow
-if submit_button:
-    api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+# ---------------------------------------------------------
+# ⚙️ 全局配置区域（多选尺寸与文案开关）
+# ---------------------------------------------------------
+with st.expander("⚙️ Image Generation Settings (Global Presets)", expanded=True):
+    col_preset, col_res = st.columns(2)
+    with col_preset:
+        ad_style = st.selectbox(
+            "Ad Style Preset",
+            [
+                "Commercial Studio Photography",
+                "3D Render & Aesthetic Micro-Shot",
+                "Minimalist Medical & Beauty Banner",
+                "Cinematic Lifestyle & Smile Shot"
+            ]
+        )
+        generate_ad_copy = st.checkbox("📝 Also generate social media Ad Copy (FB/IG)", value=True)
+        
+    with col_res:
+        # 多选尺寸，防止不必要的 API 额度浪费
+        selected_sizes = st.multiselect(
+            "Select required aspect ratios:",
+            options=["1024x1024", "1024x1792", "1792x1024"],
+            default=["1024x1024"],
+            help="Generates only the checked resolutions to save API credits."
+        )
+
+st.markdown("---")
+
+tab1, tab2 = st.tabs(["Text-to-Image", "Photo Harmonization"])
+
+def render_download_and_export_section(img_source, size_label=""):
+    """
+    Helper function to render multiformat downloads and quick editor options.
+    Supports HTTP URLs, Base64 data strings, and PIL Image objects safely.
+    """
+    st.markdown("---")
+    st.subheader(f"📥 Export Options & Next Steps ({size_label})")
     
-    if not api_key:
-        st.error("❌ OpenAI API Key not found! Please configure OPENAI_API_KEY in Streamlit Secrets or Environment Variables.")
-    elif not selected_sizes:
-        st.warning("⚠️ Please select at least one image dimension before generating.")
-    elif not user_input.strip():
-        st.warning("⚠️ Please enter an image concept description.")
-    else:
-        # Step A: Refine Prompt using gpt-5.4-mini
-        with st.spinner("🧠 Visual Director is refining the master prompt..."):
-            master_prompt = build_marketing_prompt(user_input, ad_style_preset)
-            if not master_prompt:
-                master_prompt = f"Commercial photography for DrClearAligners, {ad_style_preset} style: {user_input}. 100% crystal-clear transparent plastic aligner tray fully covering all teeth up to the gumline, 8k resolution."
+    try:
+        if isinstance(img_source, str):
+            if img_source.startswith("data:image"):
+                base64_data = img_source.split(",")[1]
+                image_bytes = base64.b64decode(base64_data)
+                pil_img = Image.open(io.BytesIO(image_bytes))
+            elif img_source.startswith("http"):
+                response = requests.get(img_source)
+                pil_img = Image.open(io.BytesIO(response.content))
+            else:
+                raise ValueError("Unsupported image string format.")
+        else:
+            pil_img = img_source
+
+        col_png, col_jpg = st.columns(2)
+        
+        # PNG Download Buffer
+        png_buf = io.BytesIO()
+        pil_img.save(png_buf, format="PNG")
+        with col_png:
+            st.download_button(
+                label=f"💾 Download HD PNG ({size_label})",
+                data=png_buf.getvalue(),
+                file_name=f"DrClearAligners_{size_label}.png",
+                mime="image/png",
+                use_container_width=True,
+                key=f"png_{size_label}"
+            )
             
-        st.success("✨ Master Prompt Ready!")
-        with st.expander("🔍 View Final Technical Prompt sent to OpenAI API"):
-            st.code(str(master_prompt), language="text")
+        # JPG Download Buffer
+        jpg_buf = io.BytesIO()
+        rgb_img = pil_img.convert("RGB")
+        rgb_img.save(jpg_buf, format="JPEG", quality=95)
+        with col_jpg:
+            st.download_button(
+                label=f"💾 Download JPG ({size_label})",
+                data=jpg_buf.getvalue(),
+                file_name=f"DrClearAligners_{size_label}.jpg",
+                mime="image/jpeg",
+                use_container_width=True,
+                key=f"jpg_{size_label}"
+            )
+            
+    except Exception as e:
+        st.error(f"Export Rendering Error: {str(e)}")
 
-        # Step B: Render Images using gpt-image-2 Model
-        st.markdown("---")
-        st.subheader("🖼️ Generated Commercial Visuals")
-        
-        client = OpenAI(api_key=api_key)
-        cols = st.columns(len(selected_sizes))
-        
-        for idx, size_name in enumerate(selected_sizes):
-            target_size = SIZE_MAPPING[size_name]
-            with cols[idx]:
-                st.markdown(f"**{size_name}**")
-                with st.spinner(f"Rendering {size_name}..."):
+# --- Tab 1: Text-to-Image ---
+with tab1:
+    with st.form("text_gen_form"):
+        raw_prompt = st.text_area(
+            "Ad Description / Product Concept",
+            placeholder="e.g., A pair of transparent aligners on a white marble table surrounded by light water droplets and clean morning light...",
+            height=100
+        )
+        submit_btn1 = st.form_submit_button("Generate Ad Image", type="primary")
+
+    if submit_btn1:
+        if not raw_prompt.strip():
+            st.warning("Please input a description for the image.")
+        elif not selected_sizes:
+            st.warning("Please select at least one resolution in Settings above.")
+        else:
+            enhanced_prompt = build_marketing_prompt(raw_prompt, ad_style)
+            st.write("**Optimized Prompt sent to OpenAI:**")
+            st.code(enhanced_prompt, language="text")
+            
+            client = ImageGenClient()
+            
+            # 按勾选的尺寸循环调用你原本的 client.generate_ad_image 接口
+            for img_size in selected_sizes:
+                with st.spinner(f"Generating high-resolution image ({img_size})..."):
                     try:
-                        # 显式使用 response_format="url" 防止返回 None
-                        res = client.images.generate(
-                            model="gpt-image-1.5",
-                            prompt=master_prompt,
-                            size=target_size,
-                            response_format="url",
-                            n=1
+                        img_url = client.generate_ad_image(
+                            prompt=enhanced_prompt,
+                            size=img_size
                         )
-                        
-                        if res and res.data and len(res.data) > 0 and res.data[0].url:
-                            image_url = res.data[0].url
-                            st.image(image_url, caption=f"DrClearAligners - {size_name}", use_container_width=True)
-                            
-                            # 下载按钮模块 (Download Image Functionality)
-                            try:
-                                img_bytes = requests.get(image_url).content
-                                file_name_clean = f"DrClearAligners_{target_size}.png"
-                                st.download_button(
-                                    label="📥 Download Image (PNG)",
-                                    data=img_bytes,
-                                    file_name=file_name_clean,
-                                    mime="image/png",
-                                    key=f"dl_btn_{idx}",
-                                    use_container_width=True
-                                )
-                            except Exception as dl_err:
-                                st.caption("⚠️ Direct download preview failed. You can right-click the image above to save.")
-                        else:
-                            st.error(f"Failed to fetch image URL for {size_name}.")
-
+                        st.image(img_url, caption=f"Generated Ad Visual - {img_size}", use_container_width=True)
+                        render_download_and_export_section(img_url, size_label=img_size)
                     except Exception as e:
-                        st.error(f"Failed to generate {size_name}: {str(e)}")
+                        st.error(f"Error for size {img_size}: {e}")
 
-        # Step C: Generate Social Media Ad Copy via gpt-5.4-mini
-        if generate_ad_copy:
-            st.markdown("---")
-            st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
-            with st.spinner("✍️ Crafting high-converting ad copy..."):
-                try:
-                    copy_text = generate_marketing_copy(user_input, ad_style_preset, api_key)
-                    st.info(copy_text)
-                except Exception as e:
+            # 按需生成营销文案
+            if generate_ad_copy:
+                st.markdown("---")
+                st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
+                with st.spinner("✍️ Crafting high-converting ad copy..."):
+                    try:
+                        copy_text = generate_marketing_copy(raw_prompt, ad_style)
+                        st.info(copy_text)
+                    except Exception as e:
                         st.warning(f"Could not generate ad copy: {str(e)}")
+
+# --- Tab 2: Single Photo Upload & Redesign ---
+with tab2:
+    st.subheader("Upload 1 Photo & Transform Scene")
+    st.caption("Upload a product or reference shot. AI will reimagine the background and studio lighting while keeping clean quality.")
+    
+    uploaded_file = st.file_uploader(
+        "Upload Product Photo (PNG or JPG)",
+        type=["png", "jpg", "jpeg"]
+    )
+
+    if uploaded_file:
+        input_img = Image.open(uploaded_file).convert("RGBA")
+        st.image(input_img, caption="Original Uploaded Photo", width=300)
+        
+        edit_instruction = st.text_area(
+            "Redesign / Background Transformation Instruction",
+            placeholder="e.g., Place the transparent aligner onto a smooth marble countertop with soft morning sunbeams and delicate water droplets. Clean commercial studio photography.",
+            height=90
+        )
+
+        if st.button("Transform Photo with AI", type="primary"):
+            if not edit_instruction.strip():
+                st.warning("Please enter your design instruction.")
+            elif not selected_sizes:
+                st.warning("Please select at least one resolution in Settings above.")
+            else:
+                try:
+                    enhanced_edit_prompt = build_marketing_prompt(edit_instruction, ad_style)
+                    st.write("**Optimized Instruction sent to AI:**")
+                    st.code(enhanced_edit_prompt, language="text")
+
+                    client = ImageGenClient()
+                    for img_size in selected_sizes:
+                        with st.spinner(f"AI is harmonizing photo background and lighting ({img_size})..."):
+                            img_url = client.edit_ad_image(
+                                pil_image=input_img,
+                                prompt=enhanced_edit_prompt,
+                                size=img_size
+                            )
+                            st.image(img_url, caption=f"Final AI Harmonized Ad Visual - {img_size}", use_container_width=True)
+                            render_download_and_export_section(img_url, size_label=img_size)
+
+                except Exception as e:
+                    st.error(f"Processing Error: {e}")
