@@ -30,11 +30,10 @@ st.markdown(
 
 st.markdown("---")
 
-# 4. Form & Campaign Controls in a Single Page Layout
+# 4. Form & Campaign Controls in Single Page Layout
 with st.form("ad_generation_form"):
     st.subheader("📋 Campaign Configuration")
     
-    # Grid layout for options on the main page
     col_preset, col_sizes = st.columns([1, 1])
     
     with col_preset:
@@ -72,7 +71,7 @@ with st.form("ad_generation_form"):
     
     submit_button = st.form_submit_button("🚀 Generate Ad Visuals", use_container_width=True)
 
-# Size Mapping Table for OpenAI API
+# Size Mapping Table for API
 SIZE_MAPPING = {
     "1:1 Square (1024x1024)": "1024x1024",
     "9:16 Story/Reels (1024x1792)": "1024x1792",
@@ -122,7 +121,7 @@ if submit_button:
         with st.expander("🔍 View Final Technical Prompt sent to OpenAI API"):
             st.code(master_prompt, language="text")
 
-        # Step B: Render Images for Selected Dimensions
+        # Step B: Render Images for Selected Dimensions using Image Model
         st.markdown("---")
         st.subheader("🖼️ Generated Commercial Visuals")
         
@@ -136,10 +135,8 @@ if submit_button:
                 with st.spinner(f"Rendering {size_name}..."):
                     try:
                         res = client.images.generate(
-                            model="dall-e-3",
                             prompt=master_prompt,
                             size=target_size,
-                            quality="hd",
                             n=1
                         )
                         image_url = res.data[0].url
