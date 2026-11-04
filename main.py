@@ -1,38 +1,38 @@
 import io
 import base64
+import os
 import requests
 import streamlit as st
 from PIL import Image
 from openai_client import ImageGenClient
 from prompt_builder import build_marketing_prompt
 from openai import OpenAI
-import os
 
-# 设置页面，默认收起/不使用 Sidebar 菜单
+# 1. 设置页面，默认收起/不使用 Sidebar 菜单
 st.set_page_config(
-    page_title="DrClearAligners Marketing Ad Generator", 
-    page_icon="🦷", 
+    page_title="Enterprise AI Ad Generator", 
+    page_icon="🎨", 
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# 🔒 彻底隐藏顶部 Header (GitHub 链接、Logo)、页脚以及 Sidebar 侧栏
+# 2. 🔒 彻底隐藏顶部 Header (GitHub 链接、Logo)、页脚以及 Sidebar 侧栏
 st.markdown(
     """
     <style>
-    /* 1. 彻底隐藏 Header 顶栏（包含所有 GitHub / 部署图标）、主菜单与页脚 */
+    /* 彻底隐藏 Header 顶栏（包含所有 GitHub / 部署图标）、主菜单与页脚 */
     header {display: none !important;}
     #MainMenu {visibility: hidden !important;}
     footer {visibility: hidden !important;}
     
-    /* 2. 彻底隐藏侧边栏及其切换按钮 */
+    /* 彻底隐藏侧边栏及其切换按钮 */
     [data-testid="stSidebar"],
     [data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebarExpandButton"] {
         display: none !important;
     }
     
-    /* 3. 优化主界面顶部的边距 */
+    /* 优化主界面顶部的边距 */
     .block-container {
         padding-top: 2rem !important;
     }
@@ -41,7 +41,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 页面主标题
+# 3. 页面主标题
 st.markdown(
     """
     <h1 style='white-space: nowrap; font-size: 2rem; margin-bottom: 0.5rem;'>
@@ -52,7 +52,7 @@ st.markdown(
 )
 st.caption("Internal tool to generate & harmonize commercial ad visuals via OpenAI API.")
 
-# Helper function to generate Ad Copy via gpt-5.4-mini
+# 4. Helper Function: 调用 gpt-5.4-mini 生成爆款社交媒体文案
 def generate_marketing_copy(user_concept: str, ad_style: str) -> str:
     api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=api_key)
@@ -75,9 +75,7 @@ Keep the tone modern, confident, clean, and appealing to young professionals."""
     )
     return response.choices[0].message.content.strip()
 
-# ---------------------------------------------------------
-# ⚙️ 全局配置区域（多选尺寸与文案开关）
-# ---------------------------------------------------------
+# 5. ⚙️ 全局配置区域（多选尺寸与文案开关）
 with st.expander("⚙️ Image Generation Settings (Global Presets)", expanded=True):
     col_preset, col_res = st.columns(2)
     with col_preset:
@@ -93,7 +91,7 @@ with st.expander("⚙️ Image Generation Settings (Global Presets)", expanded=T
         generate_ad_copy = st.checkbox("📝 Also generate social media Ad Copy (FB/IG)", value=True)
         
     with col_res:
-        # 多选尺寸，防止不必要的 API 额度浪费
+        # 多选尺寸，防止不必要的 API 额度浪费 (使用适配模型的原生尺寸)
         selected_sizes = st.multiselect(
             "Select required aspect ratios:",
             options=["1024x1024", "1024x1536", "1536x1024"],
@@ -105,6 +103,7 @@ st.markdown("---")
 
 tab1, tab2 = st.tabs(["Text-to-Image", "Photo Harmonization"])
 
+# 6. Helper Function: 渲染高清 PNG / Web 压缩 JPG 导出模块
 def render_download_and_export_section(img_source, size_label=""):
     """
     Helper function to render multiformat downloads and quick editor options.
@@ -181,7 +180,7 @@ with tab1:
             
             client = ImageGenClient()
             
-            # 按勾选的尺寸循环调用你原本的 client.generate_ad_image 接口
+            # 按勾选的尺寸循环生成图片
             for img_size in selected_sizes:
                 with st.spinner(f"Generating high-resolution image ({img_size})..."):
                     try:
@@ -194,7 +193,7 @@ with tab1:
                     except Exception as e:
                         st.error(f"Error for size {img_size}: {e}")
 
-            # 按需生成营销文案
+            # 对应生成文案
             if generate_ad_copy:
                 st.markdown("---")
                 st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
@@ -246,6 +245,17 @@ with tab2:
                             )
                             st.image(img_url, caption=f"Final AI Harmonized Ad Visual - {img_size}", use_container_width=True)
                             render_download_and_export_section(img_url, size_label=img_size)
+
+                    # 补全 Tab 2 的文案生成模块
+                    if generate_ad_copy:
+                        st.markdown("---")
+                        st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
+                        with st.spinner("✍️ Crafting high-converting ad copy..."):
+                            try:
+                                copy_text = generate_marketing_copy(edit_instruction, ad_style)
+                                st.info(copy_text)
+                            except Exception as copy_err:
+                                st.warning(f"Could not generate ad copy: {str(copy_err)}")
 
                 except Exception as e:
                     st.error(f"Processing Error: {e}")
