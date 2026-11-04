@@ -10,7 +10,7 @@ from openai import OpenAI
 
 # 1. Page Configuration
 st.set_page_config(
-    page_title="DrClearAligner Marketing Ad Generator", 
+    page_title="DrClearAligners Marketing Ad Generator", 
     page_icon="🦷", 
     layout="centered",
     initial_sidebar_state="collapsed"
@@ -45,7 +45,7 @@ st.markdown(
 st.markdown(
     """
     <h1 style='white-space: nowrap; font-size: 2rem; margin-bottom: 0.5rem;'>
-        Enterprise Marketing Image Generator
+        DrClearAligners Marketing Image Generator
     </h1>
     """, 
     unsafe_allow_html=True
