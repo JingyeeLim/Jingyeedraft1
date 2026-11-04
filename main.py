@@ -76,7 +76,7 @@ Keep the tone modern, confident, clean, and appealing to young professionals."""
     return response.choices[0].message.content.strip()
 
 # 5. Global Configurations & Presets
-with st.expander("⚙️ Image Generation Settings (Global Presets)", expanded=True):
+with st.expander("Image Generation Settings (Global Presets)", expanded=True):
     col_preset, col_res = st.columns(2)
     with col_preset:
         ad_style = st.selectbox(
@@ -88,7 +88,7 @@ with st.expander("⚙️ Image Generation Settings (Global Presets)", expanded=T
                 "Cinematic Lifestyle & Smile Shot"
             ]
         )
-        generate_ad_copy = st.checkbox("📝 Also generate social media Ad Copy (FB/IG)", value=True)
+        generate_ad_copy = st.checkbox("Also generate social media Ad Copy (FB/IG)", value=True)
         
     with col_res:
         selected_sizes = st.multiselect(
@@ -109,7 +109,7 @@ def render_download_and_export_section(img_source, size_label=""):
     Supports HTTP URLs, Base64 data strings, and PIL Image objects safely.
     """
     st.markdown("---")
-    st.subheader(f"📥 Export Options & Next Steps ({size_label})")
+    st.subheader(f"Export Options & Next Steps ({size_label})")
     
     try:
         if isinstance(img_source, str):
@@ -132,7 +132,7 @@ def render_download_and_export_section(img_source, size_label=""):
         pil_img.save(png_buf, format="PNG")
         with col_png:
             st.download_button(
-                label=f"💾 Download HD PNG ({size_label})",
+                label=f"Download HD PNG ({size_label})",
                 data=png_buf.getvalue(),
                 file_name=f"DrClearAligners_{size_label}.png",
                 mime="image/png",
@@ -146,7 +146,7 @@ def render_download_and_export_section(img_source, size_label=""):
         rgb_img.save(jpg_buf, format="JPEG", quality=95)
         with col_jpg:
             st.download_button(
-                label=f"💾 Download JPG ({size_label})",
+                label=f"Download JPG ({size_label})",
                 data=jpg_buf.getvalue(),
                 file_name=f"DrClearAligners_{size_label}.jpg",
                 mime="image/jpeg",
@@ -195,8 +195,8 @@ with tab1:
             # Generate matching marketing copy if enabled
             if generate_ad_copy:
                 st.markdown("---")
-                st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
-                with st.spinner("✍️ Crafting high-converting ad copy..."):
+                st.subheader("Recommended Social Media Ad Captions (FB / IG)")
+                with st.spinner("Crafting high-converting ad copy..."):
                     try:
                         copy_text = generate_marketing_copy(raw_prompt, ad_style)
                         st.info(copy_text)
@@ -248,8 +248,8 @@ with tab2:
                     # Generate matching ad copy for Tab 2
                     if generate_ad_copy:
                         st.markdown("---")
-                        st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
-                        with st.spinner("✍️ Crafting high-converting ad copy..."):
+                        st.subheader("Recommended Social Media Ad Captions (FB / IG)")
+                        with st.spinner("Crafting high-converting ad copy..."):
                             try:
                                 copy_text = generate_marketing_copy(edit_instruction, ad_style)
                                 st.info(copy_text)
