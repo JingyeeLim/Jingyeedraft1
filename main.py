@@ -13,12 +13,12 @@ st.set_page_config(
 
 # 2. Hide Streamlit Header, GitHub / Deploy Icon, Main Menu & Footer via Custom CSS
 hide_st_style = """
-    <style>
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stAppHeader {display: none;}
-    </style>
+<style>
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+footer {visibility: hidden;}
+.stAppHeader {display: none;}
+</style>
 """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
@@ -48,7 +48,6 @@ with st.form("ad_generation_form"):
             ],
             index=0
         )
-        
         generate_ad_copy = st.checkbox("📝 Also generate social media Ad Copy (FB/IG)", value=True)
 
     with col_sizes:
@@ -81,16 +80,14 @@ SIZE_MAPPING = {
 # Helper function to generate Ad Copy via gpt-5.4-mini
 def generate_marketing_copy(user_concept: str, ad_style: str, api_key: str) -> str:
     client = OpenAI(api_key=api_key)
-    system_prompt = """
-    You are a high-converting conversion copywriter for DrClearAligners.
-    Based on the user's campaign theme, write 3 engaging Facebook/Instagram ad caption options.
-    Each caption must include:
-    1. Attention-grabbing Headline
-    2. Primary Selling Point / Key Benefit
-    3. Strong Call-To-Action (CTA) with relevant emojis.
-    Keep the tone modern, confident, clean, and appealing to young professionals.
-    """
-    
+    system_prompt = """You are a high-converting conversion copywriter for DrClearAligners.
+Based on the user's campaign theme, write 3 engaging Facebook/Instagram ad caption options.
+Each caption must include:
+1. Attention-grabbing Headline
+2. Primary Selling Point / Key Benefit
+3. Strong Call-To-Action (CTA) with relevant emojis.
+Keep the tone modern, confident, clean, and appealing to young professionals."""
+
     response = client.chat.completions.create(
         model="gpt-5.4-mini",
         messages=[
@@ -133,7 +130,7 @@ if submit_button:
             with cols[idx]:
                 st.markdown(f"**{size_name}**")
                 with st.spinner(f"Rendering {size_name}..."):
-                     try:
+                    try:
                         res = client.images.generate(
                             model="gpt-image-2",
                             prompt=master_prompt,
@@ -141,7 +138,7 @@ if submit_button:
                             n=1
                         )
                         image_url = res.data[0].url
-                        st.image(image_url, caption=f"DrClearAligners - {size_name}", use_column_width=True)
+                        st.image(image_url, caption=f"DrClearAligners - {size_name}", use_container_width=True)
                     except Exception as e:
                         st.error(f"Failed to generate {size_name}: {str(e)}")
 
@@ -154,4 +151,4 @@ if submit_button:
                     copy_text = generate_marketing_copy(user_input, ad_style_preset, api_key)
                     st.info(copy_text)
                 except Exception as e:
-                        st.warning(f"Could not generate ad copy: {str(e)}")
+                    st.warning(f"Could not generate ad copy: {str(e)}")
