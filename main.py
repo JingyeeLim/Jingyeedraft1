@@ -121,7 +121,7 @@ if submit_button:
         with st.expander("🔍 View Final Technical Prompt sent to OpenAI API"):
             st.code(master_prompt, language="text")
 
-        # Step B: Render Images for Selected Dimensions using Image Model
+        # Step B: Render Images using Image 1.5 Model
         st.markdown("---")
         st.subheader("🖼️ Generated Commercial Visuals")
         
@@ -134,7 +134,9 @@ if submit_button:
                 st.markdown(f"**{size_name}**")
                 with st.spinner(f"Rendering {size_name}..."):
                     try:
+                        # 指明使用你的 image 1.5 模型标识
                         res = client.images.generate(
+                            model="image-1.5",
                             prompt=master_prompt,
                             size=target_size,
                             n=1
@@ -144,7 +146,7 @@ if submit_button:
                     except Exception as e:
                         st.error(f"Failed to generate {size_name}: {str(e)}")
 
-        # Step C: Generate Social Media Ad Copy (Optional)
+        # Step C: Generate Social Media Ad Copy via GPT-4o
         if generate_ad_copy:
             st.markdown("---")
             st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
