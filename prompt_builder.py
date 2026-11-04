@@ -4,7 +4,7 @@ from openai import OpenAI
 
 def build_marketing_prompt(user_input: str, ad_style: str) -> str:
     """
-    Dynamically refines user input using gpt-5.4-mini into a professional commercial ad prompt.
+    Dynamically refines user input using gpt-4o into a professional commercial ad prompt.
     Enforces full aligner coverage extending completely to the gumline.
     """
     api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -51,7 +51,7 @@ Please build an expanded prompt ensuring the clear aligner fully covers the enti
 
     try:
         response = client.chat.completions.create(
-            model="gpt-5.4-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -71,4 +71,4 @@ Please build an expanded prompt ensuring the clear aligner fully covers the enti
             f"Commercial advertising shot for DrClearAligners, {ad_style} style: {user_input}. "
             f"Featuring 100% crystal-clear transparent plastic aligners fully covering all teeth up to the gumline, "
             f"ultra-clean aesthetics, soft studio lighting, 8k resolution."
-        )
+            )
