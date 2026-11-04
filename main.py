@@ -78,7 +78,7 @@ SIZE_MAPPING = {
     "16:9 Landscape (1792x1024)": "1792x1024"
 }
 
-# Helper function to generate Ad Copy via GPT-4o
+# Helper function to generate Ad Copy via gpt-5.4-mini
 def generate_marketing_copy(user_concept: str, ad_style: str, api_key: str) -> str:
     client = OpenAI(api_key=api_key)
     system_prompt = """
@@ -92,7 +92,7 @@ def generate_marketing_copy(user_concept: str, ad_style: str, api_key: str) -> s
     """
     
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-5.4-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Ad Style: {ad_style}\nCampaign Concept: {user_concept}"}
@@ -113,15 +113,15 @@ if submit_button:
     elif not user_input.strip():
         st.warning("⚠️ Please enter an image concept description.")
     else:
-        # Step A: Refine Prompt using GPT-4o
-        with st.spinner("🧠 Visual Director (GPT-4o) is refining the master prompt..."):
+        # Step A: Refine Prompt using gpt-5.4-mini
+        with st.spinner("🧠 Visual Director (gpt-5.4-mini) is refining the master prompt..."):
             master_prompt = build_marketing_prompt(user_input, ad_style_preset)
             
         st.success("✨ Master Prompt Ready!")
         with st.expander("🔍 View Final Technical Prompt sent to OpenAI API"):
             st.code(master_prompt, language="text")
 
-        # Step B: Render Images using Image 1.5 Model
+        # Step B: Render Images using gpt-image-2 Model
         st.markdown("---")
         st.subheader("🖼️ Generated Commercial Visuals")
         
@@ -133,10 +133,9 @@ if submit_button:
             with cols[idx]:
                 st.markdown(f"**{size_name}**")
                 with st.spinner(f"Rendering {size_name}..."):
-                    try:
-                        # 指明使用你的 image 1.5 模型标识
+                     try:
                         res = client.images.generate(
-                            model="image-1.5",
+                            model="gpt-image-2",
                             prompt=master_prompt,
                             size=target_size,
                             n=1
@@ -146,13 +145,13 @@ if submit_button:
                     except Exception as e:
                         st.error(f"Failed to generate {size_name}: {str(e)}")
 
-        # Step C: Generate Social Media Ad Copy via GPT-4o
+        # Step C: Generate Social Media Ad Copy via gpt-5.4-mini
         if generate_ad_copy:
             st.markdown("---")
             st.subheader("📝 Recommended Social Media Ad Captions (FB / IG)")
-            with st.spinner("✍️ GPT-4o is crafting high-converting ad copy..."):
+            with st.spinner("✍️ gpt-5.4-mini is crafting high-converting ad copy..."):
                 try:
                     copy_text = generate_marketing_copy(user_input, ad_style_preset, api_key)
                     st.info(copy_text)
                 except Exception as e:
-                    st.warning(f"Could not generate ad copy: {str(e)}")
+                        st.warning(f"Could not generate ad copy: {str(e)}")
