@@ -136,7 +136,7 @@ if submit_button:
                     try:
                         # 显式使用 response_format="url" 防止返回 None
                         res = client.images.generate(
-                            model="gpt-image-2",
+                            model="gpt-image-1.5",
                             prompt=master_prompt,
                             size=target_size,
                             response_format="url",
