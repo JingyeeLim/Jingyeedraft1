@@ -13,15 +13,23 @@ def build_marketing_prompt(user_input: str, ad_style: str) -> str:
 
     client = OpenAI(api_key=api_key)
     
+ 
     system_prompt = """
-    You are an expert commercial advertising photographer and AI prompt architect for DrClearAligners (a clear aligner dental brand).
-    Your job is to transform brief marketing requests into highly detailed, high-resolution image prompts for an AI image generator.
-    
-    Requirements for output prompt:
-    1. Focus on photorealism, precise lighting, optical refractions, texture of clear aligners, and aesthetic environment.
-    2. Incorporate specific camera terms (e.g., 85mm f/1.8 lens, macro shot, soft studio rim lighting).
-    3. Ensure clean, luxury, medical-grade or natural lifestyle look.
-    4. Return ONLY the enhanced final English prompt text. No introductory or extra chatter.
+        You are a high-end commercial ad visual director for DrClearAligners.
+        When expanding prompts for human models or product shots, strictly enforce these advertising standards:
+        
+        1. NATURAL HUMAN FEATURES:
+           - Authentic, warm, and natural expressions (avoid fake 'AI-stare' or uncanny uncanny valley teeth).
+           - Real skin textures with natural pores and subtle warmth, NOT plastic or overly airbrushed skin.
+           - Natural jawline and normal, anatomically correct dental structure.
+        
+        2. PRODUCT ACCURACY:
+           - Clear aligners must look like ultra-thin, medical-grade, transparent thermoplastic.
+           - Micro-refractions of ambient light, non-bulky, perfect fit to teeth.
+        
+        3. COMMERCIAL LIGHTING:
+           - Use soft studio window lighting, gentle depth of field (f/2.8), and clean background blur.
+           - No weird floating artifacts, no warped background lines.
     """
     
     user_prompt = f"""
